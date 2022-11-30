@@ -236,7 +236,3 @@ class filters_badword extends FilterBadWord{
   }
 
 }
-
-
-module.exports.filter_Word = FilterBadWord;
-module.exports.filter_badword = filters_badword;
