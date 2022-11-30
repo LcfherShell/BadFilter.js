@@ -1,9 +1,11 @@
 class FilterBadWord{
 
   constructor(word = ""){
+    
     this.word = word;
     
-    this.filt = /bashfull*|kill*|fuck*|drug*|fk/gi;
+    this.filt = /bashfull*|kill*|fuck*|drug*|dick*|fk/gi;
+    
     this.subfilter = /as*|lip|pussy*|suck*|mother*|mom*|dog*|low*|sex*/gi;
 
   }
@@ -32,6 +34,7 @@ class FilterBadWord{
 
 
   static ['position_static'](word, filters){
+   
     var wordlist_, filt, result, json_, position_;
 
     
@@ -54,6 +57,7 @@ class FilterBadWord{
         wordlist_ = json_[i].word.match(filters);
       
         if (wordlist_ != null || wordlist_ === 0 ) {
+         
           position_.push(json_[i].position_);
       
         }
@@ -69,17 +73,25 @@ class FilterBadWord{
         //position = parseInt(position);
       //} 
       this.positionList = this.constructor.position_static(this.word.toString(), this.filt);
+  
       return this.positionList;
+  
   }
 
   get ['thisToxic'](){
+    
     var check = this.position();
 
     var after = "";
+    
     var before = "";
+    
     var arry = [];
+    
     if (check != null || check != 0) {
+    
         var word = this.word.toLowerCase();
+    
         function before_str(number , key){
 
           return word.substring(number, word.indexOf(key));
@@ -94,47 +106,99 @@ class FilterBadWord{
         for (var i = 0; i < check.length; i++) {
               
               const word_s = this.constructor.getboundPosition(this.word.toLowerCase().toString() , check[i]);
+
               before = before_str(0 , word_s).toString().split(" ");
-              after = after_Str(word_s, this.word);
+
+              after = after_Str(word_s, this.word).toString().split(" ");
 
               //console.log(word.indexOf(word_s));
-              console.log(after);
+              if (after.length >= 1 ){
+
+                after = after.filter(
+
+                  function(entry){
+                    
+                    return entry.trim() != '';
+                  
+                  });
+
+              }
 
               //console.log(word.substring(word.indexOf(word_s)) )
               if (before[before.length-1] === ""){
                 
                 before = before.filter(
+
                   function(entry){
                     
                     return entry.trim() != '';
                   
                   });              
+
               }
               
               try{
+                  
                   if (before[before.length-1].match(this.subfilter) != null) {
+                      
                       arry.push("Toxic");
+                      
                       arry.push(1);
+                      
                       arry.push(before[before.length-1]);
-                      break;
+                      
+                      
 
                   }
+
+                  else if (after[0].match(this.subfilter) != null){
+
+                      arry.push("Toxic");
+                      
+                      arry.push(1);
+                      
+                      arry.push(after[after.length-1]);
+
+
+                  }
+
+                  else if (after[1].match(this.subfilter) != null){
+
+                      arry.push("Toxic");
+                      
+                      arry.push(1);
+                      
+                      arry.push(before[before.length-1]);
+
+                  }
+
+                  break;
+
                 }
               catch(err){
                 
-                if ( this.word.match(this.filt) != null) {};
-                
-                arry.push("Toxic");
-                arry.push(1);
-                break
+                if ( this.word.match(this.filt) != null) {
+                      
+                      arry.push("Toxic");
+                      
+                      arry.push(1);
+                  
+                      break;
+                };
+                  
 
               }
+
+
 
           };
 
         if (arry.length <= 1) {
+          
           arry.push("Notoxic");
+          
           arry.push(0);
+        
         };
 
         return arry;
@@ -146,7 +210,9 @@ class FilterBadWord{
   }
 
   set ['thisToxic'](key){
+    
     throw key;
+  
   }
 
   ['clean'](position){
@@ -164,10 +230,13 @@ class FilterBadWord{
       for (var i = 0; i < word.length; i++) {
 
         for (var x = 0; x < get_word.length; x++) {
+        
             sensore += "*";
+        
         };
 
         word[i] = word[i].replace(get_word, sensore);
+        
         sensore = "*";
       
       };
@@ -201,20 +270,30 @@ class FilterBadWord{
 class filters_badword extends FilterBadWord{
   
   ['words_o'](word){
+    
     this.word = word.toString();
+  
   }
 
   ['config'](cl, er){
+   
     this.cl = cl;
+   
     this.er = er;
   }
+  
   get ['cleans'](){
+    
     if (this.cl === true) {
+    
       if (this.thisToxic[1] === 1 && this.thisToxic.length > 2) {
 
           var sensore = "*";
+    
           for (var i = 0; i < this.thisToxic[2].length; i++) {
+    
               sensore += "*";
+    
           };
 
           return this.clean(this.position()).replace(this.thisToxic[2], sensore);
@@ -223,7 +302,8 @@ class filters_badword extends FilterBadWord{
 
       return this.clean(this.position());
 
-    }else{
+    }
+    else{
 
       return this.word.trim();
     
@@ -232,7 +312,9 @@ class filters_badword extends FilterBadWord{
   }
 
   set ['cleans'](value){
+    
     throw value;
+  
   }
 
 }
