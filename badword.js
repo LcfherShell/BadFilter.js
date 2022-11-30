@@ -87,6 +87,8 @@ class FilterBadWord{
     var before = "";
     
     var arry = [];
+
+    var check_repr = "";
     
     if (check != null || check != 0) {
     
@@ -94,7 +96,7 @@ class FilterBadWord{
     
         function before_str(number , key){
 
-          return word.substring(number, word.indexOf(key));
+          return word.substring(number, word.indexOf(key));//nomer dan keyword
         
         }
 
@@ -141,15 +143,39 @@ class FilterBadWord{
                   
                   if (before[before.length-1].match(this.subfilter) != null) {
                       
+                      check_repr = before[before.length-1].match(this.subfilter);
+
+                      if (check_repr != before[before.length-1]) {
+                          //check ulang jika sensore tidak memenuhi persyaratan
+                          arry.push("Toxic");
+                          arry.push(1);
+                          break
+                      };
+
+                      //console.log( "1"+check_repr +" before: "+before[before.length-1] );
+
                       arry.push("Toxic");
                       
                       arry.push(1);
                       
                       arry.push(before[before.length-1]);
 
+                      break;
+
                   }
 
                   else if (after[0].match(this.subfilter) != null){
+
+                      check_repr = after[0].match(this.subfilter);
+
+                      if (check_repr != after[0]) {
+
+                          arry.push("Toxic");
+                          arry.push(1);
+                          break
+                      };
+
+                      //console.log( "2"+ check_repr + " after: "+after[0]);
 
                       arry.push("Toxic");
                       
@@ -157,9 +183,21 @@ class FilterBadWord{
                       
                       arry.push(after[after.length-1]);
 
+                      break;
+
                   }
 
                   else if (after[1].match(this.subfilter) != null){
+
+                      check_repr = after[1].match(this.subfilter);
+
+                      if (check_repr != after[1]) {
+                          arry.push("Toxic");
+                          arry.push(1);
+                          break
+                      };
+
+                      //console.log( "3"+check_repr + " after: "+after[1]);
 
                       arry.push("Toxic");
                       
@@ -167,9 +205,11 @@ class FilterBadWord{
                       
                       arry.push(after[1]);
 
+                      break;
+
                   }
 
-                  break;
+                  
 
                 }
               catch(err){
