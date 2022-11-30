@@ -6,7 +6,7 @@ class FilterBadWord{
     
     this.filt = /bashfull*|kill*|fuck*|drug*|dick*|fk/gi;
     
-    this.subfilter = /as*|lip|pussy*|suck*|mother*|mom*|dog*|low*|sex*/gi;
+    this.subfilter = /ass|lip|pussy*|suck*|mother*|mom*|dog*|low*|sex*/gi;
 
   }
 
@@ -146,8 +146,6 @@ class FilterBadWord{
                       arry.push(1);
                       
                       arry.push(before[before.length-1]);
-                      
-                      
 
                   }
 
@@ -159,7 +157,6 @@ class FilterBadWord{
                       
                       arry.push(after[after.length-1]);
 
-
                   }
 
                   else if (after[1].match(this.subfilter) != null){
@@ -168,7 +165,7 @@ class FilterBadWord{
                       
                       arry.push(1);
                       
-                      arry.push(before[before.length-1]);
+                      arry.push(after[1]);
 
                   }
 
@@ -275,10 +272,10 @@ class filters_badword extends FilterBadWord{
   
   }
 
-  ['config'](cl, er){
+  ['config'](cl=true, smart=true, er=false){
    
     this.cl = cl;
-   
+    this.st = smart;
     this.er = er;
   }
   
@@ -286,17 +283,20 @@ class filters_badword extends FilterBadWord{
     
     if (this.cl === true) {
     
-      if (this.thisToxic[1] === 1 && this.thisToxic.length > 2) {
+      if (this.thisToxic[1] === 1 && this.thisToxic.length > 2 ) {
 
-          var sensore = "*";
-    
-          for (var i = 0; i < this.thisToxic[2].length; i++) {
-    
-              sensore += "*";
-    
-          };
+        if (this.st === true) {
+            var sensore = "*";
+      
+            for (var i = 0; i < this.thisToxic[2].length; i++) {
+      
+                sensore += "*";
+      
+            };
 
-          return this.clean(this.position()).replace(this.thisToxic[2], sensore);
+            return this.clean(this.position()).replace(this.thisToxic[2], sensore);
+        };
+        return this.clean(this.position());
 
       };
 
