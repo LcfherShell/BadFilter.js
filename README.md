@@ -1,1 +1,1 @@
-<Badword.js>
+<BadFilter.js>
