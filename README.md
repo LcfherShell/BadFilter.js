@@ -5,11 +5,11 @@ const badfilt = new filters_badword();
 badfilt.config(true, false); //accpet filter and error print
 badfilt.words_o("FUck master");
 console.log( badfilt.cleans );
-console.log( badfilt.position());
+console.log( badfilt.position() );
 //result ***** master
 
 badfilt.words_o("motherfucker");
 console.log( badfilt.cleans );
-console.log( badfilt.position());
+console.log( badfilt.position() );
 //result *************
 ```
