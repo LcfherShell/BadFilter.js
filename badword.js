@@ -17,12 +17,22 @@ function RegexMatch(word, regex) {
                     return true;
                 }else if (datacocok.replace(/1/gi, "l").match(regex)){
                     return true;
+                }else if (datacocok.replace(/6/gi, "b").match(regex)){
+                    return true;
+                }else if (datacocok.replace(/6/gi, "g").match(regex)){
+                    return true;
                 };
 
                 if (words[index].indexOf("3")){
                     words[index] = "e";
                 }else if(words[index].indexOf("0")){
                     words[index] = "o";
+                }else if(words[index].indexOf("4")){
+                    words[index] = "a";
+                }else if(words[index].indexOf("5")){
+                    words[index] = "s";
+                }else if(words[index].indexOf("8")){
+                    words[index] = "b";
                 };
             };
             barisCocok.push(words[index]);
@@ -323,7 +333,7 @@ class FilterBadWord{
 
   }
 
-};
+}
 
 
 class filters_badword extends FilterBadWord{
