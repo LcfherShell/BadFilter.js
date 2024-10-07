@@ -1,6 +1,40 @@
+/**
+ * Fungsi untuk memeriksa apakah kata cocok dengan pola regex
+ * @param {string} word - string kata yang akan diperiksa
+ * @param {regex} regex - pola regex yang akan digunakan untuk memeriksa kata-kata
+ * @return {boolean} - true jika kata cocok dengan pola regex, false jika tidak
+ */
+function RegexMatch(word, regex) {
+    const words = word;
+    let barisCocok = [];
+    if (words){
+        for (let index = 0; index < words.length; index++) {
+            let datacocok = barisCocok.join('').toLowerCase();
+            if (datacocok.match(regex)){
+                return true;
+            }else{
+                if (datacocok.replace(/1/gi, "i").match(regex)){
+                    return true;
+                }else if (datacocok.replace(/1/gi, "l").match(regex)){
+                    return true;
+                };
+
+                if (words[index].indexOf("3")){
+                    words[index] = "e";
+                }else if(words[index].indexOf("0")){
+                    words[index] = "o";
+                };
+            };
+            barisCocok.push(words[index]);
+        };
+    }
+    // Return array baris yang cocok
+    return false;
+};
+
 class FilterBadWord{
 
-  constructor(word = ""){
+  constructor(word = "" ){
     
     this.word = word;
     
@@ -60,6 +94,11 @@ class FilterBadWord{
          
           position_.push(json_[i].position_);
       
+        }else{
+            wordlist_ = RegexMatch(json_[i].word, filters);
+            if (wordlist_ != false) {
+                position_.push(json_[i].position_);
+            };
         }
       
     };
@@ -69,12 +108,10 @@ class FilterBadWord{
   }
 
   ['position']() {
-      //if ( typeof position != "number" ) {
-        //position = parseInt(position);
-      //} 
-      this.positionList = this.constructor.position_static(this.word.toString(), this.filt);
+    
+      var positionList = this.constructor.position_static(this.word.toString(), this.filt);
   
-      return this.positionList;
+      return positionList;
   
   }
 
@@ -284,24 +321,9 @@ class FilterBadWord{
 
     return output.join(" ");
 
-    //position.forEach( async(number) => {
-      
-      //const get_word = await this.constructor.getboundPosition(this.word.toString() , number);
-      
-      //for (var i = 0; i < word.length; i++) {
-      
-        //word[i] = word[i].replace(get_word, "**");
-      
-      //};
-
-      //console.log(word);
-
-    //});
-
-    
   }
 
-}
+};
 
 
 class filters_badword extends FilterBadWord{
@@ -312,11 +334,10 @@ class filters_badword extends FilterBadWord{
   
   }
 
-  ['config'](cl=true, smart=true, er=false){
+  ['config'](cl=true, smart=true){
    
     this.cl = cl;
     this.st = smart;
-    this.er = er;
   }
   
   get ['cleans'](){
@@ -357,4 +378,4 @@ class filters_badword extends FilterBadWord{
   
   }
 
-}
+};
