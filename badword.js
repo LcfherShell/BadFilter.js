@@ -4,7 +4,7 @@ class FilterBadWord{
     
     this.word = word;
     
-    this.filt = /bashfull*|kill*|fuck*|drug*|dick*|fk/gi;
+    this.filt = /b[[a4][s5]hfu[l1][l1]*|k[i1][l1][l1]*|fuck*|dr[uo]g*|d[i1]ck*|fk/gi;
     
     this.subfilter = /ass|lip|pussy*|suck*|mother*|mom*|dog*|low*|sex*/gi;
 
