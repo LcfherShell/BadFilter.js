@@ -1,14 +1,35 @@
+function escapeRegExp(strings){
+  let data = strings.trim().toLowerCase().split("|").filter(Boolean);
+  for (let index = 0; index < data.length; index++) {
+      const element = data[index];
+      if (!((element.includes("(") && element.includes(")")) || 
+          (element.includes("[") && element.includes("]")) ) ){
+            data[index] = data[index].replace(/[.*+?^${}()|[\]\\]/g, '\\$&').
+            replace(/[a4]/g, "[a4]").replace(/[s5]/g, "[s5]").replace("i", "[i1]").
+            replace("[l1]", "l").replace(/[o0]/g, "[o0]").replace(/[e3]/g, "[e3]");
+      };
+  }
+  data = new RegExp(data.join("|"));
+  return data.source;
+};
+
 class FilterBadWord{
 
-  constructor(word = ""){
-    
+  constructor(word = "", customFilter="", customSubFilter=""){
+  
     this.word = word;
     
-    this.filt = /b[[a4][s5]hfu[l1][l1]*|k[i1][l1][l1]*|fuck*|dr[uo]g*|d[i1]ck*|fk/gi;
+    this.filt = /b[a4][s5]hfu[l1][l1]|k[i1][l1][l1]|fuck[*]?|dr[uo]g[*]?|d[i1]ck[*]?|fk/gi;
     
-    this.subfilter = /ass|lip|pussy*|suck*|mother*|mom*|dog*|low*|sex*/gi;
-
+    this.subfilter = /[a4][s5][s5]|[l1][i1]p|pu[s5][s5]y[*]?|[s5]uck[*]?|m[o0]th[e3]r[*]?|m[o0]m[*]?|d[o0]g[*]?|l[o0]w[*]?|s[e3]x[*]?/gi;
+    if (customFilter){
+        this.filt = new RegExp(this.filt.source+"|"+escapeRegExp(customFilter), "gi");
+    };
+    if (customSubFilter){
+        this.subfilter = new RegExp(this.subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
+    };
   }
+
 
 
   static getboundPosition(word, _position){
@@ -312,11 +333,15 @@ class filters_badword extends FilterBadWord{
   
   }
 
-  ['config'](cl=true, smart=true, er=false){
-   
+  ['config'](cl=true, smart=true, customFilter="", customSubFilter=""){
     this.cl = cl;
     this.st = smart;
-    this.er = er;
+    if (customFilter){
+        this.filt = new RegExp(this.filt.source+"|"+escapeRegExp(customFilter), "gi");
+    };
+    if (customSubFilter){
+        this.subfilter = new RegExp(this.subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
+    };
   }
   
   get ['cleans'](){
