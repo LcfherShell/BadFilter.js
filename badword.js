@@ -43,12 +43,14 @@ function RegexMatch(word, regex) {
 };
 
 function escapeRegExp(strings){
-  let data = strings.trim().split("|").filter(Boolean);
+  let data = strings.trim().toLowerCase().split("|").filter(Boolean);
   for (let index = 0; index < data.length; index++) {
       const element = data[index];
       if (!((element.includes("(") && element.includes(")")) || 
           (element.includes("[") && element.includes("]")) ) ){
-            data[index] = data[index].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            data[index] = data[index].replace(/[.*+?^${}()|[\]\\]/g, '\\$&').
+            replace(/[a4]/g, "[a4]").replace(/[s5]/g, "[s5]").replace("i", "[i1]").
+            replace("[l1]", "l").replace(/[o0]/g, "[o0]").replace(/[e3]/g, "[e3]");
       };
   }
   data = new RegExp(data.join("|"));
@@ -367,10 +369,15 @@ class filters_badword extends FilterBadWord{
 
 }
 
-['config'](cl=true, smart=true){
- 
+['config'](cl=true, smart=true, customFilter="", customSubFilter=""){
   this.cl = cl;
   this.st = smart;
+  if (customFilter){
+      this.filt = new RegExp(this.filt.source+"|"+escapeRegExp(customFilter), "gi");
+  };
+  if (customSubFilter){
+      this.subfilter = new RegExp(this.subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
+  };
 }
 
 get ['cleans'](){
