@@ -44,10 +44,10 @@ class FilterBadWord{
     this._filt = /[b8][[a4][s5]hfu[l1][l1]*|k[i1][l1][l1]*|fuck*|dr[uo]g*|d[i1]ck*|fk/gi;
     
     this._subfilter = /ass|lip|pussy*|suck*|mother*|mom*|dog*|low*|sex*/gi;
-    if (customFilter.length>1){
+    if (customFilter.length>3){
         this._filt = new RegExp(this._filt.source+"|"+escapeRegExp(customFilter), "gi");
     };
-    if (customSubFilter.length>1){
+    if (customSubFilter.length>3){
         this._subfilter = new RegExp(this._subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
     };
   }
@@ -358,10 +358,10 @@ class filters_badword extends FilterBadWord{
    
     this.cl = cl;
     this.st = smart;
-    if (customFilter.length>1){
+    if (customFilter.length>3){
         this._filt = new RegExp(this._filt.source+"|"+escapeRegExp(customFilter), "gi");
     };
-    if (customSubFilter.length>1){
+    if (customSubFilter.length>3){
         this._subfilter = new RegExp(this._subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
     };
   }
