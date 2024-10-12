@@ -39,11 +39,11 @@ class FilterBadWord{
 
   constructor(text = "", customFilter="", customSubFilter=""){
     
-    this.text = text;
+    this._text = text;
     
-    this.filt = /[b8][[a4][s5]hfu[l1][l1]*|k[i1][l1][l1]*|fuck*|dr[uo]g*|d[i1]ck*|fk/gi;
+    this._filt = /[b8][[a4][s5]hfu[l1][l1]*|k[i1][l1][l1]*|fuck*|dr[uo]g*|d[i1]ck*|fk/gi;
     
-    this.subfilter = /ass|lip|pussy*|suck*|mother*|mom*|dog*|low*|sex*/gi;
+    this._subfilter = /ass|lip|pussy*|suck*|mother*|mom*|dog*|low*|sex*/gi;
     if (customFilter){
         this._filt = new RegExp(this._filt.source+"|"+escapeRegExp(customFilter), "gi");
     };
@@ -114,7 +114,7 @@ class FilterBadWord{
       //if ( typeof position != "number" ) {
         //position = parseInt(position);
       //} 
-      this.positionList = this.constructor.position_static(this.text.toString(), this.filt);
+      this.positionList = this.constructor.position_static(this._text.toString(), this._filt);
   
       return this.positionList;
   
@@ -134,7 +134,7 @@ class FilterBadWord{
     
     if (check != null || check != 0) {
     
-        var word = this.text.toLowerCase();
+        var word = this._text.toLowerCase();
     
         function before_str(number , key){
 
@@ -149,11 +149,11 @@ class FilterBadWord{
 
         for (var i = 0; i < check.length; i++) {
               
-              const word_s = this.constructor.getboundPosition(this.text.toLowerCase().toString() , check[i]);
+              const word_s = this.constructor.getboundPosition(this._text.toLowerCase().toString() , check[i]);
 
               before = before_str(0 , word_s).toString().split(" ");
 
-              after = after_Str(word_s, this.text).toString().split(" ");
+              after = after_Str(word_s, this._text).toString().split(" ");
 
               //console.log(word.indexOf(word_s));
               if (after.length >= 1 ){
@@ -183,9 +183,9 @@ class FilterBadWord{
               
               try{
                   
-                  if (before[before.length-1].match(this.subfilter) != null) {
+                  if (before[before.length-1].match(this._subfilter) != null) {
                       
-                      check_repr = before[before.length-1].match(this.subfilter);
+                      check_repr = before[before.length-1].match(this._subfilter);
 
                       if (check_repr != before[before.length-1]) {
                           //check ulang jika sensore tidak memenuhi persyaratan
@@ -206,9 +206,9 @@ class FilterBadWord{
 
                   }
 
-                  else if (after[0].match(this.subfilter) != null){
+                  else if (after[0].match(this._subfilter) != null){
 
-                      check_repr = after[0].match(this.subfilter);
+                      check_repr = after[0].match(this._subfilter);
 
                       if (check_repr != after[0]) {
 
@@ -229,9 +229,9 @@ class FilterBadWord{
 
                   }
 
-                  else if (after[1].match(this.subfilter) != null){
+                  else if (after[1].match(this._subfilter) != null){
 
-                      check_repr = after[1].match(this.subfilter);
+                      check_repr = after[1].match(this._subfilter);
 
                       if (check_repr != after[1]) {
                           arry.push("Toxic");
@@ -256,7 +256,7 @@ class FilterBadWord{
                 }
               catch(err){
                 
-                if ( this.text.match(this.filt) != null) {
+                if ( this._text.match(this._filt) != null) {
                       
                       arry.push("Toxic");
                       
@@ -298,13 +298,13 @@ class FilterBadWord{
 
     var word, process, output, sensore;
 
-    word = this.text.split(" ");
+    word = this._text.split(" ");
 
     sensore = "*";
 
     process = position.forEach( number => {
 
-      const get_word = this.constructor.getboundPosition(this.text.toString() , number);
+      const get_word = this.constructor.getboundPosition(this._text.toString() , number);
 
       for (var i = 0; i < word.length; i++) {
 
@@ -328,7 +328,7 @@ class FilterBadWord{
 
     //position.forEach( async(number) => {
       
-      //const get_word = await this.constructor.getboundPosition(this.text.toString() , number);
+      //const get_word = await this.constructor.getboundPosition(this._text.toString() , number);
       
       //for (var i = 0; i < word.length; i++) {
       
@@ -350,7 +350,7 @@ class filters_badword extends FilterBadWord{
   
   ['text_o'](text){
     
-    this.text = text.toString();
+    this._text = text.toString();
   
   }
 
@@ -387,7 +387,7 @@ class filters_badword extends FilterBadWord{
     }
     else{
 
-      return this.text.trim();
+      return this._text.trim();
     
     }
 
