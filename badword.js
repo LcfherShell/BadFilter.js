@@ -425,7 +425,17 @@ set ['cleans'](value){
 
 // Definisikan objek ekspor
 const exportsObject = {
+  /**
+   * FilterBadWord class: class for filtering bad words 
+   *@param {string} text - The text to filter 
+   *@param {string} customFilter - List of bad words 
+   *@param {string} customSubFilter - List of bad sub words
+   */
   FilterBadWord,
+  /**
+   * filters_badword class: a simpler class to filter bad words 
+   * which uses the FilterBadWord class. To use it you have to call the config function
+   */
   filters_badword
 };
 
