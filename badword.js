@@ -378,4 +378,19 @@ class filters_badword extends FilterBadWord{
   
   }
 
-}
+};
+
+// Definisikan objek ekspor
+const exportsObject = {
+  FilterBadWord,
+  filters_badword
+};
+
+// Periksa lingkungan eksekusi
+if (typeof exports === 'object' && typeof module !== 'undefined') {
+  // Ekspor ke Node.js
+  module.exports = exportsObject;
+}else {
+  // Ekspor ke browser
+  Object.assign(window, exportsObject);
+};
