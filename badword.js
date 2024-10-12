@@ -85,15 +85,17 @@ constructor(text = "", customFilter="", customSubFilter=""){
   
     this._text = text;
     
-    this._filt = /b[a4][s5]hfu[l1][l1]|k[i1][l1][l1]|fuck[*]?|dr[uo]g[*]?|d[i1]ck[*]?|fk/gi;
+    this._filt = /b[a4][s5]hfu[l1][l1]|k[i1][l1][l1]|fuck[*]?|dr[uo]g[*]?|d[i1]ck[*]?|[a4][s5][s5]|[l1][i1]p|pu[s5][s5]y[*]?|fk/gi;
     
     this._subfilter = /[a4][s5][s5]|[l1][i1]p|pu[s5][s5]y[*]?|[s5]uck[*]?|m[o0]th[e3]r[*]?|m[o0]m[*]?|d[o0]g[*]?|l[o0]w[*]?|s[e3]x[*]?/gi;
+  
     if (customFilter){
         this._filt = new RegExp(this._filt.source+"|"+escapeRegExp(customFilter), "gi");
     };
     if (customSubFilter){
         this._subfilter = new RegExp(this._subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
     };
+    this.__subtxic = [];
 }
 
 
@@ -232,7 +234,7 @@ get ['thisToxic'](){
 
                     if (d.match(this._subfilter)){
 
-                        this._text = this._text.replace(d, '*'.repeat(d.length));
+                        this.__subtxic.push([d, '*'.repeat(d.length)]);
                       
                     };
                     
@@ -243,7 +245,7 @@ get ['thisToxic'](){
 
                     if (d.match(this._subfilter)){
 
-                        this._text = this._text.replace(d, '*'.repeat(d.length));
+                        this.__subtxic.push([d, '*'.repeat(d.length)]);
 
                     };
 
@@ -360,7 +362,7 @@ set ['thisToxic'](key){
 
 ['clean'](position){
 
-    var word, process, output;
+    var word;
 
     word = this._text.split(" ");
 
@@ -369,20 +371,30 @@ set ['thisToxic'](key){
 
       const get_word = this.constructor.getboundPosition(this._text.toString() , number);
 
-      for (var i = 0; i < word.length; i++) {
-        if (!(validateInput("email", word[i]) || validateInput("url", word[i]))){
+      word.forEach((w, i) => {
+        if (!(validateInput("email", w) || validateInput("url", w))){
 
-            word[i] = word[i].replace(get_word, '*'.repeat(get_word.length));       
+            word[i] = w.replace(get_word, '*'.repeat(get_word.length));       
         
         };    
       
-      };
+      });
 
     });
+  
+    this.__subtxic.forEach(([oldWord, newWord]) => {
+  
+      word.forEach((w, i) => {
+        if (!(validateInput("email", w) || validateInput("url", w))){
+          
+            word[i] = w.replace(oldWord, newWord);
+        
+        };
+      });
+    
+    });
 
-    output = word;
-
-    return output.join(" ");
+    return word.join(" ");
 
 }
 
