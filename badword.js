@@ -103,13 +103,7 @@ class FilterBadWord{
     
     var check = this.position();
 
-    var after = "";
-    
-    var before = "";
-    
-    var arry = [];
-
-    var check_repr = "";
+    var after ="", before ="", check_repr ="";
     
     if (check != null || check != 0) {
     
