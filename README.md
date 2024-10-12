@@ -59,11 +59,11 @@ For full control over filtering, dive into the **filters_badword** class:
 ```javascript
 const badfilt = new filters_badword();
 badfilt.config(true, false); // Custom filtering settings
-badfilt.words_o("FUck master"); // Censored output: ***** master
+badfilt.text_o("FUck master"); // Censored output: ***** master
 console.log(badfilt.cleans);
 console.log(badfilt.position()); // Shows position of the bad word
 
-badfilt.words_o("motherfucker");
+badfilt.text_o("motherfucker");
 console.log(badfilt.cleans); // Output: *************
 console.log(badfilt.position());
 ```
