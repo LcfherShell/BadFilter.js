@@ -79,10 +79,9 @@ function validateInput(type, value) {
   return regex.test(value);
 };
 
-
 class FilterBadWord{
 
-constructor(text= "", customFilter="", customSubFilter=""){
+constructor(text = "", customFilter="", customSubFilter=""){
   
     this._text = text;
     
@@ -212,7 +211,7 @@ get ['thisToxic'](){
                   
                   });
 
-              }
+              };
 
               //console.log(word.substring(word.indexOf(word_s)) )
               if (before[before.length-1] === ""){
@@ -250,6 +249,7 @@ get ['thisToxic'](){
 
                 });
               };
+
               try{
                   
                   if (before[before.length-1].match(this._subfilter) != null) {
@@ -369,13 +369,12 @@ set ['thisToxic'](key){
 
       const get_word = this.constructor.getboundPosition(this._text.toString() , number);
 
-      for (var i = 0; i < word.length-1; i++) {
-        
+      for (var i = 0; i < word.length; i++) {
         if (!(validateInput("email", word[i]) || validateInput("url", word[i]))){
 
             word[i] = word[i].replace(get_word, '*'.repeat(get_word.length));       
         
-        };
+        };    
       
       };
 
@@ -437,7 +436,7 @@ get ['cleans'](){
     
     return this._text.trim();
   
-  }
+  };
 
 }
 
@@ -448,6 +447,7 @@ set ['cleans'](value){
 }
 
 };
+
 
 // Definisikan objek ekspor
 const exportsObject = {
