@@ -323,7 +323,7 @@ class FilterBadWord{
 
 class filters_badword extends FilterBadWord{
   
-  ['words_o'](text){
+  ['text_o'](text){
     
     this._text = text.toString();
   
