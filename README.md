@@ -63,7 +63,7 @@ badfilt.words_o("FUck master"); // Censored output: ***** master
 console.log(badfilt.cleans);
 console.log(badfilt.position()); // Shows position of the bad word
 
-badfilt.words_o("motherfucker");
+badfilt.text_o("motherfucker");
 console.log(badfilt.cleans); // Output: *************
 console.log(badfilt.position());
 ```
