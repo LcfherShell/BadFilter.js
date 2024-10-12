@@ -1,3 +1,6 @@
+// Periksa lingkungan eksekusi
+const isNode = typeof exports === 'object' && typeof module !== 'undefined';
+
 /**
  * Fungsi untuk memeriksa apakah kata cocok dengan pola regex
  * @param {string} word - string kata yang akan diperiksa
@@ -88,14 +91,14 @@ constructor(text = "", customFilter="", customSubFilter=""){
     this._filt = /b[a4][s5]hfu[l1][l1]|k[i1][l1][l1]|fuck[*]?|dr[uo]g[*]?|d[i1]ck[*]?|[a4][s5][s5]|[l1][i1]p|pu[s5][s5]y[*]?|fk/gi;
     
     this._subfilter = /[a4][s5][s5]|[l1][i1]p|pu[s5][s5]y[*]?|[s5]uck[*]?|m[o0]th[e3]r[*]?|m[o0]m[*]?|d[o0]g[*]?|l[o0]w[*]?|s[e3]x[*]?/gi;
-  
-    if (customFilter){
+    if (customFilter.length>1){
         this._filt = new RegExp(this._filt.source+"|"+escapeRegExp(customFilter), "gi");
     };
-    if (customSubFilter){
+    if (customSubFilter.length>1){
         this._subfilter = new RegExp(this._subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
     };
     this.__subtxic = [];
+    this._st = false;
 }
 
 
@@ -385,7 +388,7 @@ set ['thisToxic'](key){
     this.__subtxic.forEach(([oldWord, newWord]) => {
   
       word.forEach((w, i) => {
-        if (!(validateInput("email", w) || validateInput("url", w))){
+        if (!(validateInput("email", w) || validateInput("url", w)) && this._st){
           
             word[i] = w.replace(oldWord, newWord);
         
@@ -412,10 +415,31 @@ class filters_badword extends FilterBadWord{
 ['config'](cl=true, smart=true, customFilter="", customSubFilter=""){
   this._cl = cl;
   this._st = smart;
-  if (customFilter){
+  var isfiles = false;
+  if (isNode){
+    const {readFileSync, existsSync} = require("node:fs");
+    if (existsSync(customSubFilter)) {
+        var readata = readFileSync(customSubFilter).split("\n");
+        function extractNames(text) {
+            const namePattern = /\b[A-Z][a-zàâäéèêëïîôöùûüç'-]+\b/g;
+            return text.match(namePattern);
+        };
+        readata = readata.map(value => (extractNames(value) || validateInput("email", value) || 
+                                        validateInput("phone", value) || validateInput("url", value)) ? "" : value).
+                                      filter(item => item && item.trim());
+        if (readata.length>1){
+            this._subfilter = new RegExp(this._subfilter.source + "|" + escapeRegExp(readata.join("|")), "gi");
+        };
+    }else{
+      if (customSubFilter.includes("|")) this._subfilter = new RegExp(this._subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
+    };
+    isfiles = true;
+  };
+
+  if (customFilter.length>1){
       this._filt = new RegExp(this._filt.source+"|"+escapeRegExp(customFilter), "gi");
   };
-  if (customSubFilter){
+  if (customSubFilter.length>1 && !isfiles){
       this._subfilter = new RegExp(this._subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
   };
 }
@@ -477,8 +501,7 @@ const exportsObject = {
   filters_badword
 };
 
-// Periksa lingkungan eksekusi
-const isNode = typeof exports === 'object' && typeof module !== 'undefined';
+
 
 // Ekspor ke lingkungan yang sesuai
 isNode ? module.exports = exportsObject : Object.assign(window, exportsObject);
