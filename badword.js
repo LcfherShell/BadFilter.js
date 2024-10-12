@@ -6,12 +6,14 @@ function escapeRegExp(strings){
           (element.includes("[") && element.includes("]")) ) ){
             data[index] = data[index].replace(/[.*+?^${}()|[\]\\]/g, '\\$&').
             replace(/[a4]/g, "[a4]").replace(/[s5]/g, "[s5]").replace("i", "[i1]").
-            replace("[l1]", "l").replace(/[o0]/g, "[o0]").replace(/[e3]/g, "[e3]");
+            replace("l", "[l1]").replace(/[o0]/g, "[o0]").replace(/[e3]/g, "[e3]").
+            replace(/[b8]/g, "[b8]");
       };
   }
   data = new RegExp(data.join("|"));
   return data.source;
 };
+
 
 class FilterBadWord{
 
