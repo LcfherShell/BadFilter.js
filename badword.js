@@ -397,10 +397,7 @@ const exportsObject = {
 };
 
 // Periksa lingkungan eksekusi
-if (typeof exports === 'object' && typeof module !== 'undefined') {
-  // Ekspor ke Node.js
-  module.exports = exportsObject;
-}else {
-  // Ekspor ke browser
-  Object.assign(window, exportsObject);
-};
+const isNode = typeof exports === 'object' && typeof module !== 'undefined';
+
+// Ekspor ke lingkungan yang sesuai
+isNode ? module.exports = exportsObject : Object.assign(window, exportsObject);
