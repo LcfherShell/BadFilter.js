@@ -8,7 +8,7 @@ Tired of offensive language in your app? 🚫 **BadFilter.js** to the rescue! We
 
 **BadFilter.js** offers two powerful components:
 - **FilterBadWord Class**: The brains of the operation! This utility class is responsible for filtering unwanted words from your text.
-- **filters_badword Class**: A lightweight wrapper around `FilterBadWord` for easier, more streamlined usage. Think of it as the "express mode" for your text-filtering needs!
+- **filters_badword Function**: A lightweight wrapper around `FilterBadWord` for easier, more streamlined usage. Think of it as the "express mode" for your text-filtering needs!
 
 With these components, you can easily cleanse your text, ensuring a respectful, safe online environment. 🚀✨
 
@@ -32,9 +32,8 @@ Want to use BadFilter.js in your web app? No problem! Here’s how:
 ```html
 <!-- Add badword.js into the HTML page -->
 <script type="text/javascript" src="./badword.js"></script>
-<!-- Or import directly if supporting ES6 Module -->
-<script>
-  import { FilterBadWord, filters_badword } from './badword.js';
+<!-- Or import directly if supporting ES Module -->
+<script type="module" src="./badword.js">
 </script> 
 
 <script>
