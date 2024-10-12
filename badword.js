@@ -354,10 +354,16 @@ class filters_badword extends FilterBadWord{
   
   }
 
-  ['config'](cl=true, smart=true){
+  ['config'](cl=true, smart=true, customFilter="", customSubFilter=""){
    
     this.cl = cl;
     this.st = smart;
+    if (customFilter.length>1){
+        this._filt = new RegExp(this._filt.source+"|"+escapeRegExp(customFilter), "gi");
+    };
+    if (customSubFilter.length>1){
+        this._subfilter = new RegExp(this._subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
+    };
   }
   
   get ['cleans'](){
