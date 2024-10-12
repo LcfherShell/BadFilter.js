@@ -397,14 +397,14 @@ get ['cleans'](){
               sensore += "*";
     
           };
-          return this._clean(this.position()).replace(this.thisToxic[2], sensore);
+          return this.clean(this.position()).replace(this.thisToxic[2], sensore);
       };
       
-      return this._clean(this.position());
+      return this.clean(this.position());
 
     };
     
-    return this._clean(this.position());
+    return this.clean(this.position());
 
   }
   else{
