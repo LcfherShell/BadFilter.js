@@ -62,16 +62,16 @@ class FilterBadWord{
 
 constructor(word = "", customFilter="", customSubFilter=""){
   
-    this.word = word;
+    this._text = word;
     
-    this.filt = /b[a4][s5]hfu[l1][l1]|k[i1][l1][l1]|fuck[*]?|dr[uo]g[*]?|d[i1]ck[*]?|fk/gi;
+    this._filt = /b[a4][s5]hfu[l1][l1]|k[i1][l1][l1]|fuck[*]?|dr[uo]g[*]?|d[i1]ck[*]?|fk/gi;
     
-    this.subfilter = /[a4][s5][s5]|[l1][i1]p|pu[s5][s5]y[*]?|[s5]uck[*]?|m[o0]th[e3]r[*]?|m[o0]m[*]?|d[o0]g[*]?|l[o0]w[*]?|s[e3]x[*]?/gi;
+    this._subfilter = /[a4][s5][s5]|[l1][i1]p|pu[s5][s5]y[*]?|[s5]uck[*]?|m[o0]th[e3]r[*]?|m[o0]m[*]?|d[o0]g[*]?|l[o0]w[*]?|s[e3]x[*]?/gi;
     if (customFilter){
-        this.filt = new RegExp(this.filt.source+"|"+escapeRegExp(customFilter), "gi");
+        this._filt = new RegExp(this._filt.source+"|"+escapeRegExp(customFilter), "gi");
     };
     if (customSubFilter){
-        this.subfilter = new RegExp(this.subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
+        this._subfilter = new RegExp(this._subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
     };
 }
 
@@ -142,7 +142,7 @@ static ['position_static'](word, filters){
 
 ['position']() {
   
-    var positionList = this.constructor.position_static(this.word.toString(), this.filt);
+    var positionList = this.constructor.position_static(this._text.toString(), this._filt);
 
     return positionList;
 
@@ -158,7 +158,7 @@ get ['thisToxic'](){
     
     if (check != null || check != 0) {
     
-        var word = this.word.toLowerCase();
+        var word = this._text.toLowerCase();
     
         function before_str(number , key){
 
@@ -173,11 +173,11 @@ get ['thisToxic'](){
 
         for (var i = 0; i < check.length; i++) {
               
-              const word_s = this.constructor.getboundPosition(this.word.toLowerCase().toString() , check[i]);
+              const word_s = this.constructor.getboundPosition(this._text.toLowerCase().toString() , check[i]);
 
               before = before_str(0 , word_s).toString().split(" ");
 
-              after = after_str(word_s, this.word).toString().split(" ");
+              after = after_str(word_s, this._text).toString().split(" ");
 
               //console.log(word.indexOf(word_s));
               if (after.length >= 1 ){
@@ -209,9 +209,9 @@ get ['thisToxic'](){
               if (before){
                 before.forEach(d=>{
 
-                    if (d.match(this.subfilter)){
+                    if (d.match(this._subfilter)){
 
-                        this.word = this.word.replace(d, '*'.repeat(d.length));
+                        this._text = this._text.replace(d, '*'.repeat(d.length));
                       
                     };
                     
@@ -220,9 +220,9 @@ get ['thisToxic'](){
               if (after){
                 after.forEach(d=>{
 
-                    if (d.match(this.subfilter)){
+                    if (d.match(this._subfilter)){
 
-                        this.word = this.word.replace(d, '*'.repeat(d.length));
+                        this._text = this._text.replace(d, '*'.repeat(d.length));
 
                     };
 
@@ -230,9 +230,9 @@ get ['thisToxic'](){
               };
               try{
                   
-                  if (before[before.length-1].match(this.subfilter) != null) {
+                  if (before[before.length-1].match(this._subfilter) != null) {
                       
-                      check_repr = before[before.length-1].match(this.subfilter);
+                      check_repr = before[before.length-1].match(this._subfilter);
 
                       if (check_repr != before[before.length-1]) {
                           //check ulang jika sensore tidak memenuhi persyaratan
@@ -253,9 +253,9 @@ get ['thisToxic'](){
 
                   }
 
-                  else if (after[0].match(this.subfilter) != null){
+                  else if (after[0].match(this._subfilter) != null){
 
-                      check_repr = after[0].match(this.subfilter);
+                      check_repr = after[0].match(this._subfilter);
 
                       if (check_repr != after[0]) {
 
@@ -276,9 +276,9 @@ get ['thisToxic'](){
 
                   }
 
-                  else if (after[1].match(this.subfilter) != null){
+                  else if (after[1].match(this._subfilter) != null){
 
-                      check_repr = after[1].match(this.subfilter);
+                      check_repr = after[1].match(this._subfilter);
 
                       if (check_repr != after[1]) {
 
@@ -304,7 +304,7 @@ get ['thisToxic'](){
                 }
               catch(err){
                 
-                if ( this.word.match(this.filt) != null) {
+                if ( this._text.match(this._filt) != null) {
                       
                       arry.push("Toxic");
                       arry.push(1);
@@ -340,12 +340,12 @@ set ['thisToxic'](key){
 
     var word, process, output;
 
-    word = this.word.split(" ");
+    word = this._text.split(" ");
 
 
     position.forEach( number => {
 
-      const get_word = this.constructor.getboundPosition(this.word.toString() , number);
+      const get_word = this.constructor.getboundPosition(this._text.toString() , number);
 
       for (var i = 0; i < word.length-1; i++) {
         
@@ -366,30 +366,30 @@ set ['thisToxic'](key){
 
 class filters_badword extends FilterBadWord{
 
-['words_o'](word){
+['text_o'](word){
   
-  this.word = word.toString();
+  this._text = word.toString();
 
 }
 
 ['config'](cl=true, smart=true, customFilter="", customSubFilter=""){
-  this.cl = cl;
-  this.st = smart;
+  this._cl = cl;
+  this._st = smart;
   if (customFilter){
-      this.filt = new RegExp(this.filt.source+"|"+escapeRegExp(customFilter), "gi");
+      this._filt = new RegExp(this._filt.source+"|"+escapeRegExp(customFilter), "gi");
   };
   if (customSubFilter){
-      this.subfilter = new RegExp(this.subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
+      this._subfilter = new RegExp(this._subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
   };
 }
 
 get ['cleans'](){
   
-  if (this.cl === true) {
+  if (this._cl === true) {
   
     if (this.thisToxic[1] === 1 && this.thisToxic.length > 2 ) {
 
-      if (this.st === true) {
+      if (this._st === true) {
           var sensore = "*";
     
           for (var i = 0; i < this.thisToxic[2].length; i++) {
@@ -397,19 +397,19 @@ get ['cleans'](){
               sensore += "*";
     
           };
-          return this.clean(this.position()).replace(this.thisToxic[2], sensore);
+          return this._clean(this.position()).replace(this.thisToxic[2], sensore);
       };
       
-      return this.clean(this.position());
+      return this._clean(this.position());
 
     };
     
-    return this.clean(this.position());
+    return this._clean(this.position());
 
   }
   else{
     
-    return this.word.trim();
+    return this._text.trim();
   
   }
 
