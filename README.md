@@ -8,7 +8,7 @@ Tired of offensive language in your app? 🚫 **BadFilter.js** to the rescue! We
 
 **BadFilter.js** offers two powerful components:
 - **FilterBadWord Class**: The brains of the operation! This utility class is responsible for filtering unwanted words from your text.
-- **filters_badword Function**: A lightweight wrapper around `FilterBadWord` for easier, more streamlined usage. Think of it as the "express mode" for your text-filtering needs!
+- **filters_badword Class**: A lightweight wrapper around `FilterBadWord` for easier, more streamlined usage. Think of it as the "express mode" for your text-filtering needs!
 
 With these components, you can easily cleanse your text, ensuring a respectful, safe online environment. 🚀✨
 
