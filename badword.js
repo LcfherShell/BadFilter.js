@@ -1,6 +1,5 @@
 // Periksa lingkungan eksekusi
 const isNode = typeof exports === 'object' && typeof module !== 'undefined';
-
 /**
  * Fungsi untuk memeriksa apakah kata cocok dengan pola regex
  * @param {string} word - string kata yang akan diperiksa
@@ -8,7 +7,7 @@ const isNode = typeof exports === 'object' && typeof module !== 'undefined';
  * @return {boolean} - true jika kata cocok dengan pola regex, false jika tidak
  */
 function RegexMatch(word, regex) {
-  const words = word.trim();
+  var words = word.trim();
   let barisdata = [];
   if (words){
       for (let index = 0; index < words.length; index++) {
@@ -16,6 +15,18 @@ function RegexMatch(word, regex) {
           if (datacocok.match(regex)){
               return true;
           }else{
+              if (words[index].indexOf("3")){
+                words = words.replace("3","e");
+              }else if(words[index].indexOf("0")){
+                words = words.replace("0","o");
+              }else if(words[index].indexOf("4")){
+                words = words.replace("4","a");
+              }else if(words[index].indexOf("5")){
+                words = words.replace("5","s");
+              }else if(words[index].indexOf("8")){
+                words = words.replace("8","b");
+              };
+
               if (datacocok.replace(/1/gi, "i").match(regex)){
                   return true;
               }else if (datacocok.replace(/1/gi, "l").match(regex)){
@@ -26,17 +37,7 @@ function RegexMatch(word, regex) {
                   return true;
               };
 
-              if (words[index].indexOf("3")){
-                  words[index] = "e";
-              }else if(words[index].indexOf("0")){
-                  words[index] = "o";
-              }else if(words[index].indexOf("4")){
-                  words[index] = "a";
-              }else if(words[index].indexOf("5")){
-                  words[index] = "s";
-              }else if(words[index].indexOf("8")){
-                  words[index] = "b";
-              };
+              
           };
           barisdata.push(words[index].trim());
       };
@@ -505,7 +506,6 @@ const exportsObject = {
 
 // Ekspor ke lingkungan yang sesuai
 //isNode ? module.exports = exportsObject : Object.assign(window, exportsObject);
-// Ekspor ke lingkungan yang sesuai
 if (isNode) {
   // Jika di Node.js, gunakan module.exports
   module.exports = exportsObject;
