@@ -58,6 +58,28 @@ function escapeRegExp(strings){
   return data.source;
 };
 
+function validateInput(type, value) {
+  let regex;
+  switch (type) {
+      case 'email':
+          // Regex kompleks untuk email
+          regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\.[a-zA-Z]{2,})?$/;
+          break;
+      case 'phone':
+          // Regex kompleks untuk nomor telepon (contoh: +1-234-567-8900, (123) 456-7890, 123-456-7890, 1234567890)
+          regex = /^(?:\+?(\d{1,3}))?[-. ]?(\(?\d{1,4}?\)?)[-.\s]?(\d{1,4})[-.\s]?(\d{1,4})[-.\s]?(\d{1,9})$/;
+          break;
+      case 'url':
+          // Regex kompleks untuk URL
+          regex = /^(https?:\/\/)?(www\.)?([a-zA-Z0-9-]+\.[a-zA-Z]{2,})(\/[^\s]*)?$/;
+          break;
+      default:
+          return false; // Tipe tidak valid
+  }
+  return regex.test(value);
+};
+
+
 class FilterBadWord{
 
 constructor(text= "", customFilter="", customSubFilter=""){
@@ -349,7 +371,11 @@ set ['thisToxic'](key){
 
       for (var i = 0; i < word.length-1; i++) {
         
-        word[i] = word[i].replace(get_word, '*'.repeat(get_word.length));       
+        if (!(validateInput("email", word[i]) || validateInput("url", word[i]))){
+
+            word[i] = word[i].replace(get_word, '*'.repeat(get_word.length));       
+        
+        };
       
       };
 
