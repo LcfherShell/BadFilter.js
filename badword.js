@@ -6,10 +6,10 @@
  */
 function RegexMatch(word, regex) {
   const words = word.trim();
-  let barisCocok = [];
+  let barisdata = [];
   if (words){
       for (let index = 0; index < words.length; index++) {
-          let datacocok = barisCocok.join('').toLowerCase();
+          let datacocok = barisdata.join("").toLowerCase();
           if (datacocok.match(regex)){
               return true;
           }else{
@@ -35,9 +35,9 @@ function RegexMatch(word, regex) {
                   words[index] = "b";
               };
           };
-          barisCocok.push(words[index].trim());
+          barisdata.push(words[index].trim());
       };
-  }
+  };
   // Return array baris yang cocok
   return false;
 };
@@ -50,7 +50,8 @@ function escapeRegExp(strings){
           (element.includes("[") && element.includes("]")) ) ){
             data[index] = data[index].replace(/[.*+?^${}()|[\]\\]/g, '\\$&').
             replace(/[a4]/g, "[a4]").replace(/[s5]/g, "[s5]").replace("i", "[i1]").
-            replace("[l1]", "l").replace(/[o0]/g, "[o0]").replace(/[e3]/g, "[e3]");
+            replace("l", "[l1]").replace(/[o0]/g, "[o0]").replace(/[e3]/g, "[e3]").
+            replace(/[b8]/g, "[b8]");
       };
   }
   data = new RegExp(data.join("|"));
@@ -94,7 +95,7 @@ static getboundPosition(word, _position){
     }
 
     return paragap.substring(_position, end);
- }
+}
 
 
 static ['position_static'](word, filters){
@@ -125,10 +126,12 @@ static ['position_static'](word, filters){
           position_.push(json_[i].position_);
       
         }else{
+
             wordlist_ = RegexMatch(json_[i].word, filters);
             if (wordlist_ != false) {
                 position_.push(json_[i].position_);
             };
+
         }
       
     };
@@ -149,13 +152,9 @@ get ['thisToxic'](){
   
     var check = this.position();
 
-    var after = "";
-    
-    var before = "";
+    var after ="", before ="", check_repr ="";
     
     var arry = [];
-
-    var check_repr = "";
     
     if (check != null || check != 0) {
     
@@ -209,17 +208,24 @@ get ['thisToxic'](){
               //console.log(before, after);
               if (before){
                 before.forEach(d=>{
+
                     if (d.match(this.subfilter)){
+
                         this.word = this.word.replace(d, '*'.repeat(d.length));
                       
                     };
+                    
                 });
               };
               if (after){
                 after.forEach(d=>{
+
                     if (d.match(this.subfilter)){
+
                         this.word = this.word.replace(d, '*'.repeat(d.length));
+
                     };
+
                 });
               };
               try{
@@ -275,6 +281,7 @@ get ['thisToxic'](){
                       check_repr = after[1].match(this.subfilter);
 
                       if (check_repr != after[1]) {
+
                           arry.push("Toxic");
                           arry.push(1);
                           break
@@ -300,9 +307,7 @@ get ['thisToxic'](){
                 if ( this.word.match(this.filt) != null) {
                       
                       arry.push("Toxic");
-                      
                       arry.push(1);
-                  
                       break;
                 };
                   
@@ -313,7 +318,6 @@ get ['thisToxic'](){
         if (arry.length <= 1) {
           
           arry.push("Notoxic");
-          
           arry.push(0);
         
         };
@@ -344,8 +348,7 @@ set ['thisToxic'](key){
       const get_word = this.constructor.getboundPosition(this.word.toString() , number);
 
       for (var i = 0; i < word.length-1; i++) {
-
-  
+        
         word[i] = word[i].replace(get_word, '*'.repeat(get_word.length));       
       
       };
@@ -394,22 +397,18 @@ get ['cleans'](){
               sensore += "*";
     
           };
-          console.log(1);
           return this.clean(this.position()).replace(this.thisToxic[2], sensore);
       };
       
-      console.log(2);
       return this.clean(this.position());
 
     };
     
-    console.log(3);
     return this.clean(this.position());
 
   }
   else{
     
-    console.log(4);
     return this.word.trim();
   
   }
