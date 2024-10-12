@@ -60,9 +60,9 @@ function escapeRegExp(strings){
 
 class FilterBadWord{
 
-constructor(word = "", customFilter="", customSubFilter=""){
+constructor(text= "", customFilter="", customSubFilter=""){
   
-    this._text = word;
+    this._text = text;
     
     this._filt = /b[a4][s5]hfu[l1][l1]|k[i1][l1][l1]|fuck[*]?|dr[uo]g[*]?|d[i1]ck[*]?|fk/gi;
     
@@ -366,9 +366,9 @@ set ['thisToxic'](key){
 
 class filters_badword extends FilterBadWord{
 
-['text_o'](word){
+['text_o'](text){
   
-  this._text = word.toString();
+  this._text = text.toString();
 
 }
 
