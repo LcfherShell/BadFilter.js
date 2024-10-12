@@ -7,7 +7,7 @@ function escapeRegExp(strings){
             data[index] = data[index].replace(/[.*+?^${}()|[\]\\]/g, '\\$&').
             replace(/[a4]/g, "[a4]").replace(/[s5]/g, "[s5]").replace("i", "[i1]").
             replace("l", "[l1]").replace(/[o0]/g, "[o0]").replace(/[e3]/g, "[e3]").
-            replace(/[b8]/g, "[b8]");
+            replace(/[b8]/g, "[b8]").replace(/[kx]/g, "[kx]");
       };
   }
   data = new RegExp(data.join("|"));
