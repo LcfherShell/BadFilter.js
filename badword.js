@@ -361,7 +361,7 @@ set ['thisToxic'](key){
 
 }
 
-}
+};
 
 
 class filters_badword extends FilterBadWord{
