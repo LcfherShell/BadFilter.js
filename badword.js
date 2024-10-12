@@ -425,4 +425,19 @@ const exportsObject = {
 const isNode = typeof exports === 'object' && typeof module !== 'undefined';
 
 // Ekspor ke lingkungan yang sesuai
-isNode ? module.exports = exportsObject : Object.assign(window, exportsObject);
+//isNode ? module.exports = exportsObject : Object.assign(window, exportsObject);
+// Ekspor ke lingkungan yang sesuai
+if (isNode) {
+  // Jika di Node.js, gunakan module.exports
+  module.exports = exportsObject;
+} else {
+  // Jika di browser, periksa dukungan ES Modules
+  if (typeof window.customElements !== "undefined") {
+      // Dukungan untuk ES Modules, gunakan `export`
+      window.exportsObject = exportsObject; // Menyimpan di objek window
+      Object.assign(window, exportsObject);
+  } else {
+      // Jika tidak mendukung ES Modules, gunakan Object.assign
+      Object.assign(window, exportsObject);
+  }
+}
