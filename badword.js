@@ -69,6 +69,7 @@ function RegexMatch(word, regex) {
   return false;
 };
 
+
 function escapeRegExp(strings){
   let data = strings.trim().toLowerCase().split("|").filter(Boolean);
   for (let index = 0; index < data.length; index++) {
@@ -112,15 +113,43 @@ constructor(text = "", customFilter="", customSubFilter=""){
   
     this._text = text;
     
-    this._filt = /b[a4][s5]hfu[l1][l1]|k[i1][l1][l1]|fuck[*]?|dr[uo]g[*]?|d[i1]ck[*]?|[a4][s5][s5]|[l1][i1]p|pu[s5][s5]y[*]?|fk/gi;
-    
-    this._subfilter = /[a4][s5][s5]|[l1][i1]p|pu[s5][s5]y[*]?|[s5]uck[*]?|m[o0]th[e3]r[*]?|m[o0]m[*]?|d[o0]g[*]?|l[o0]w[*]?|s[e3]x[*]?/gi;
+    this._filt = /b[a4][s5]hfu[l1][l1]|[8b]r[e3][a4][s5]t|[b8][o0][o0][b8]|k[i1][l1][l1]|fuck[*]?|dr[uo]g[*]?|d[i1]ck[*]?|[a4][s5][s5]|[l1][i1]p|pu[s5][s5]y[*]?|fk/gi;
+    this._subfilter = /[a4][s5][s5]|[l1][i1]p|pu[s5][s5]y[*]?|[s5]uck[*]?|m[o0]th[e3]r[*]?|m[o0]m[*]?|d[o0]g[*]?|l[o0]w[*]?|s[e3]x[*]?|[8b]r[e3][a4][s5]t/gi;
+
     if (customFilter.length>3){
         this._filt = new RegExp(this._filt.source+"|"+escapeRegExp(customFilter), "gi");
     };
     if (customSubFilter.length>3){
         this._subfilter = new RegExp(this._subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
     };
+    
+    //mapping emoji
+    this.__emoji = new RegExp([
+      '😈', // Sering digunakan untuk menunjukkan niat nakal atau licik.
+      '👿', // Menunjukkan sifat jahat, sering digunakan dalam konteks humor atau kejahatan.
+      '🍆', // Sering digunakan secara seksual, merujuk pada bentuknya yang mirip dengan organ genital pria.
+      '🍑', // Sering digunakan secara seksual, merujuk pada bentuknya yang mirip dengan bokong.
+      '🐄', // Sering diplesetkan dengan wanita,
+      '🐐', // Sering diplesetkan dengan wanita atau pria.
+      '🍋', // Sering digunakan secara seksual, merujuk pada hubungan sesama jenis.
+      '🌈', // Sering digunakan secara seksual, merujuk pada hubungan sesama jenis.
+      '🏳️‍🌈', // Sering digunakan secara seksual, merujuk pada hubungan sesama jenis.
+      '🍉', // Sering diplesetkan dengan ukuran dada wanita.
+      '💦', // Bisa merujuk pada aktivitas seksual, sering digunakan untuk menunjukkan keringat atau air.
+      '😍', // Menunjukkan cinta atau ketertarikan yang mendalam.
+      '🥵', // Bisa merujuk pada ketertarikan fisik atau merasa terlalu panas.
+      '🤤', // Bisa merujuk pada keinginan seksual atau ketertarikan yang kuat.
+      '🥥', // Menunjukkan pakaian dalam atau ukuran dada wanita.
+      '👙', //  Menunjukkan pakaian dalam wanita, sering digunakan dalam konteks mode atau kolam renang.
+      '💣', // Menunjukkan ledakan atau kekerasan, bisa digunakan dalam konteks drama atau peringatan.
+      '🔪', // Menunjukkan kekerasan, sering digunakan dalam konteks ancaman atau agresi.
+      '🔫', // Menunjukkan senjata api, sering digunakan dalam konteks kekerasan atau ancaman.
+      '⚔️', // Menunjukkan pertarungan atau konflik, sering digunakan dalam konteks sejarah atau fantasi.
+      '💥', // Menunjukkan kekuatan atau dampak, bisa merujuk pada situasi dramatis atau kekerasan.
+      '🔨', // Sering digunakan dalam konteks konstruksi atau kekerasan, bisa menunjukkan agresi.
+      '🖕'  //  Menunjukkan penghinaan atau ketidaksenangan, sering dianggap sebagai gesture kasar.
+    ].join("|"), "gi");
+
     this.__subtxic = [];
     this._st = false;
 }
@@ -390,9 +419,12 @@ set ['thisToxic'](key){
 ['clean'](position){
 
     var word;
+    
+    if ((position || this.__subtxic) && this.__emoji.test(this._text) && this._st) {
+        this._text = this._text.replace(this.__emoji, "*");
+    };
 
     word = this._text.split(" ");
-
 
     position.forEach( number => {
 
@@ -528,7 +560,6 @@ const exportsObject = {
 
 
 // Ekspor ke lingkungan yang sesuai
-//isNode ? module.exports = exportsObject : Object.assign(window, exportsObject);
 if (isNode) {
   // Jika di Node.js, gunakan module.exports
   module.exports = exportsObject;
@@ -541,5 +572,5 @@ if (isNode) {
   } else {
       // Jika tidak mendukung ES Modules, gunakan Object.assign
       Object.assign(window, exportsObject);
-  }
-}
+  };
+};
