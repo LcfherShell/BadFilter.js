@@ -22,7 +22,6 @@
  */
 
 
-
 function RegexMatch(word: string, regex: RegExp): boolean {
     const words = word.trim();
     const barisdata: string[] = [];
@@ -171,16 +170,6 @@ class FilterBadWord {
 
         if (check.length > 0) {
         const word = this._text.toLowerCase();
-        function before_str(number , key){
-
-            return word.substring(number, word.indexOf(key));//nomer dan keyword
-        
-        };
-
-        function after_str(w, spec){
-            let data =word.substring( word.indexOf(w), spec.length+word.length );
-            return data.replace(w, "").trim(); //, word.indexOf(spec));
-        };
         
         for (const index of check) {
             const word_s = this.getBoundPosition(this._text.toLowerCase(), index);
@@ -250,6 +239,12 @@ class FilterBadWord {
 class filters_badword extends FilterBadWord {
     protected _cl: boolean;
     protected _st: boolean;
+    
+    constructor() {
+        super(); // Memanggil konstruktor kelas induk
+        this._cl = true; // Inisialisasi properti cl
+        this._st = true; // Inisialisasi properti st
+    }
 
     public text_o(text: string): void {
         this._text = text.toString();
