@@ -21,6 +21,8 @@
  * THE SOFTWARE.
  */
 
+
+
 function escapeRegExp(strings: string): string {
     let data = strings.trim().toLowerCase().split("|").filter(Boolean);
     for (let index = 0; index < data.length; index++) {
@@ -141,8 +143,14 @@ class FilterBadWord {
 }
 
 class filters_badword extends FilterBadWord {
-    private cl: boolean;
-    private st: boolean;
+    protected cl: boolean;
+    protected st: boolean;
+    
+    constructor(cl: boolean = true, st: boolean = true) {
+        super(); // Memanggil konstruktor kelas induk
+        this.cl = cl; // Inisialisasi properti cl
+        this.st = st; // Inisialisasi properti st
+    }
 
     public text_o(text: string): void {
         this._text = text.toString();
@@ -162,18 +170,27 @@ class filters_badword extends FilterBadWord {
 
     public get cleans(): string {
         if (this.cl) {
-            if (this.thisToxic[1] === 1 && this.thisToxic.length > 2) {
-                if (this.st) {
-                    const sensore = "*".repeat(this.thisToxic[2].length);
-                    return this.clean(this.position()).replace(this.thisToxic[2], sensore);
+            const toxicResult = this.thisToxic; // Simpan hasil dalam variabel
+    
+            // Pastikan toxicResult adalah array dan tidak false
+            if (Array.isArray(toxicResult) && toxicResult[1] === 1 && toxicResult.length > 2) {
+                const toxicWord = toxicResult[2];
+    
+                // Pastikan toxicWord adalah string
+                if (typeof toxicWord === 'string') {
+                    const sensore = "*".repeat(toxicWord.length);
+                    // Memanggil clean dengan hasil posisi yang telah dibersihkan
+                    return this.clean(this.position()).replace(toxicWord, sensore);
                 }
-                return this.clean(this.position());
             }
+    
+            // Kembali bersih jika tidak ada kata yang terdeteksi
             return this.clean(this.position());
         } else {
             return this._text.trim();
         }
     }
+    
 
     set cleans(value: string) {
         throw value;
