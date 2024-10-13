@@ -23,26 +23,6 @@ function escapeRegExp(strings: string): string {
     return new RegExp(data.join("|")).source;
 }
 
-function validateInput(type: string, value: string): boolean {
-    let regex: RegExp;
-
-    switch (type) {
-        case 'email':
-            regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.(com|net|org|edu|gov|mil|co|info|io|biz|id|us|uk|ca|au|de|fr|es|it|jp|cn|br|in|ru|mx|kr|za|nl|se|no|fi|dk|pl|pt|ar|ch|hk|sg|my|th|vn|ae|at|be|cz|hu|ro|bg|gr|lt|lv|sk|si|ee|cy)(\.[a-zA-Z]{2,})?$/;
-            break;
-        case 'phone':
-            regex = /^(?:\+?(\d{1,3}))?[-. ]?(\(?\d{1,4}?\)?)[-.\s]?(\d{1,4})[-.\s]?(\d{1,4})[-.\s]?(\d{1,9})$/;
-            break;
-        case 'url':
-            regex = /^(https?:\/\/)?(www\.)?([a-zA-Z0-9-]+\.[a-zA-Z]{2,})(\/[^\s]*)?$/;
-            break;
-        default:
-            return false; // Invalid type
-    }
-
-    return regex.test(value);
-}
-
 class FilterBadWord {
     protected _text: string; // Changed to protected to allow access in subclasses
     protected _filt: RegExp; // Changed to protected
