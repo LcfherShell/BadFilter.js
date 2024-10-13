@@ -1,0 +1,20 @@
+{
+  "name": "BadFilter.js",
+  "version": "1.2.0",
+  "type": "module",
+  "description": "This script functions to detect and clean abusive or toxic words in text.",
+  "main": "badword.js",
+  "scripts": {
+    "test": "mocha",
+  },
+  "devDependencies": {
+    "mocha": "^10.0.0", 
+    "chai": "^4.3.0"
+  },
+  "keywords": ["filter", "words", "profanity", "abusive", "toxic", "censored"],
+  "author": "LcfherShell",
+  "license": "MIT",
+  "engines": {
+    "node": ">=8.0.0"
+  }
+}
