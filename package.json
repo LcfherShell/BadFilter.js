@@ -1,0 +1,13 @@
+{
+  "name": "BadFilter.js",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "This script functions to detect and clean abusive or toxic words in text.",
+  "main": "badword.js",
+  "keywords": ["filter", "words", "profanity", "abusive", "toxic", "censored"],
+  "author": "LcfherShell",
+  "license": "MIT",
+  "engines": {
+    "node": ">=8.0.0"
+  }
+}
