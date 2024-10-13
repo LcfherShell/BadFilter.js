@@ -26,7 +26,9 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - run: npm ci
+        # Remove cache step if you don't want to rely on a lock file
+        # cache: 'npm'
+
+    - run: npm ci || npm install
     - run: npm run build --if-present
     - run: npm test
