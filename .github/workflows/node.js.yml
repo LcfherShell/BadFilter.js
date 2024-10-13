@@ -29,6 +29,10 @@ jobs:
         # Remove cache step if you don't want to rely on a lock file
         # cache: 'npm'
 
-    - run: npm ci || npm install
+    - run: npm ci
     - run: npm run build --if-present
     - run: npm test
+
+    # Optional: Set DEBUG environment variable for more detailed logging
+    - name: Set Debug Mode
+      run: echo "DEBUG=true" >> $GITHUB_ENV
