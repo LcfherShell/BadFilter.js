@@ -708,7 +708,7 @@ set ['thisToxic'](key){
     // Check conditions for emoji handling
     if ((position || this.__subtxic) && this.__emoji__.test(this.__text__) && this._st) {
         // Replace emojis in the text with asterisks (keeping one character visible)
-        this.__text__ = this.__text__.replace(this.__emoji__, (matchedWord) => '*'.repeat(matchedWord.length - 1));
+        this.__text__ = this.__text__.replace(this.__emoji__, () => '*'.repeat(1));
     };
 
     // Split the text into words
