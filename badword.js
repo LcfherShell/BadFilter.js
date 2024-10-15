@@ -30,39 +30,43 @@ const isNode = typeof exports === 'object' && typeof module !== 'undefined';
  * @return {boolean} - true jika kata cocok dengan pola regex, false jika tidak
  */
 function RegexMatch(word, regex) {
-  var words = word.trim();
-  let barisdata = [];
-  if (words){
-      for (let index = 0; index < words.length; index++) {
-          let datacocok = barisdata.join("").toLowerCase();
-          if (datacocok.match(regex)){
+  var modWord = word.trim();
+  let escapeDta = [];
+  if (modWord){
+      for (let index = 0; index < modWord.length; index++) {
+          let currChar = escapeDta.join("").toLowerCase();
+          if (currChar.match(regex)){
               return true;
           }else{
-              if (words[index].indexOf("3")){
-                words = words.replace("3","e");
-              }else if(words[index].indexOf("0")){
-                words = words.replace("0","o");
-              }else if(words[index].indexOf("4")){
-                words = words.replace("4","a");
-              }else if(words[index].indexOf("5")){
-                words = words.replace("5","s");
-              }else if(words[index].indexOf("8")){
-                words = words.replace("8","b");
+              if (modWord[index].indexOf("3")){
+                modWord  = modWord.replace("3","e");
+              }else if(modWord[index].indexOf("0")){
+                modWord  = modWord.replace("0","o");
+              }else if(modWord[index].indexOf("4")){
+                modWord  = modWord.replace("4","a");
+              }else if(modWord[index].indexOf("5")){
+                modWord  = modWord.replace("5","s");
+              }else if(modWord[index].indexOf("$")){
+                modWord  = modWord.replace("$","s");
+              }else if(modWord[index].indexOf("8")){
+                modWord  = modWord.replace("8","b");
+              }else if(modWord[index].indexOf("&")){
+                modWord  = modWord.replace("&","b");
               };
 
-              if (datacocok.replace(/1/gi, "i").match(regex)){
+              if (currChar.replace(/[1!]/gi, "i").match(regex)){
                   return true;
-              }else if (datacocok.replace(/1/gi, "l").match(regex)){
+              }else if (currChar.replace(/[1!]/gi, "l").match(regex)){
                   return true;
-              }else if (datacocok.replace(/6/gi, "b").match(regex)){
+              }else if (currChar.replace(/6/gi, "b").match(regex)){
                   return true;
-              }else if (datacocok.replace(/6/gi, "g").match(regex)){
+              }else if (currChar.replace(/6/gi, "g").match(regex)){
                   return true;
               };
 
               
           };
-          barisdata.push(words[index].trim());
+          escapeDta.push(modWord[index].trim());
       };
   };
   // Return array baris yang cocok
@@ -79,7 +83,7 @@ function escapeRegExp(strings){
             data[index] = data[index].replace(/[.*+?^${}()|[\]\\]/g, '\\$&').
             replace(/[a4]/g, "[a4]").replace(/[s5]/g, "[s5]").replace("i", "[i1]").
             replace("l", "[l1]").replace(/[o0]/g, "[o0]").replace(/[e3]/g, "[e3]").
-            replace(/[b8]/g, "[b8]").replace(/[kx]/g, "[kx]");
+            replace(/[b8]/g, "[b8]").replace(/[kx]/g, "[kx]")+"[^a-z]?";
       };
   }
   data = new RegExp(data.join("|"));
@@ -107,24 +111,168 @@ function validateInput(type, value) {
   return regex.test(value);
 };
 
+
+
+
+///versi terbaru
+function findMissingParts(text1, regexPattern) {
+  try {
+    const regex = regexPattern;  // Buat regex dari regexPattern, case insensitive
+    const match = text1.match(regex);             // Cocokkan text1 dengan regex
+
+    if (match) {
+      return {
+        matched: match[0],    // Bagian yang sesuai dengan regex
+        remaining: text1.replace(match[0], '') // Bagian yang tidak sesuai (hilang)
+      };
+    } else {
+      return { matched: null, remaining: text1 }; // Jika tidak ada yang cocok, kembalikan teks asli
+    }
+  } catch (e) {
+    return false;
+  }
+};
+
+
+
+
+
+function findSimilarMatches(data1, regex) {
+  const regexMatches = [];
+  const possiblePatterns = regex.source.split('|'); // Ambil pola regex
+
+  // Fungsi untuk menghitung jarak Levenshtein dengan mempertimbangkan karakter dalam tanda kurung
+  function getLevenshteinDistance(str1, str2) {
+    const len1 = str1.length;
+    const len2 = str2.length;
+    const dp = Array.from(Array(len1 + 1), () => Array(len2 + 1).fill(0));
+
+    for (let i = 0; i <= len1; i++) {
+      for (let j = 0; j <= len2; j++) {
+        if (i === 0) {
+          dp[i][j] = j; // Jika str1 kosong
+        } else if (j === 0) {
+          dp[i][j] = i; // Jika str2 kosong
+        } else if (str1[i - 1] === str2[j - 1]) {
+          dp[i][j] = dp[i - 1][j - 1]; // Jika karakter sama
+        } else {
+          dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]); // Operasi edit
+        }
+      }
+    }
+    return dp[len1][len2];
+  }
+
+  // Fungsi untuk menghitung jarak Levenshtein dengan mengonversi pola regex
+  function convertPattern(pattern) {
+    let converted = '';
+    let matchedCount = 0; // Variabel untuk menghitung jumlah karakter yang cocok
+    let i = 0;
+
+    while (i < pattern.length) {
+      if (pattern[i] === '[') {
+        // Temukan posisi penutup ']'
+        let closingBracket = pattern.indexOf(']', i);
+        if (closingBracket !== -1) {
+          // Menghitung jumlah karakter dalam tanda kurung
+          matchedCount += closingBracket - i - 1; // Hitung jumlah karakter dalam []
+          converted += 'X'; // Gantikan karakter dalam tanda kurung dengan 'X'
+          i = closingBracket + 1; // Lewati konten dalam kurung
+        } else {
+          converted += pattern[i]; // Jika tidak ada penutup, tetap tambahkan karakter
+          i++;
+        }
+      } else if (pattern[i] === '?') {
+        // Abaikan '?'
+        i++;
+      } else {
+        converted += pattern[i]; // Tambahkan karakter lain
+        i++;
+      }
+    }
+
+    return { converted, matchedCount }; // Mengembalikan pola yang sudah diubah dan jumlah karakter yang cocok
+  }
+
+  // Mencocokkan regex ke setiap pola
+  possiblePatterns.forEach(pattern => {
+    const testRegex = new RegExp(pattern); // Regex untuk mencocokkan
+    const matchResult = testRegex.exec(data1); // Mencari kecocokan
+
+    if (matchResult) {
+      regexMatches.push({
+        matched: pattern,
+        missingChars: 0,
+        similarity: 100, // Jika cocok penuh, tidak ada karakter yang hilang
+        countChars: (pattern.match(/\[[^\]]+\]/g) || []).length // Hitung jumlah karakter dalam []
+      });
+    } else {
+      // Ubah pola untuk menghitung jarak Levenshtein
+      const { converted: convertedPattern, matchedCount } = convertPattern(pattern);
+      const levDistance = getLevenshteinDistance(data1, convertedPattern);
+      const maxLength = Math.max(data1.length, convertedPattern.length);
+      const similarity = ((maxLength - levDistance) / maxLength) * 100;
+
+      // Hitung karakter yang hilang dari pola
+      const missingChars = Math.abs(data1.length - convertedPattern.length);
+
+      // Menyimpan hasil untuk pola yang hampir cocok
+      regexMatches.push({
+        matched: pattern,
+        missingChars: missingChars + levDistance, // Menambahkan jarak Levenshtein
+        similarity: Math.floor(similarity.toFixed(2)),
+        countChars: matchedCount // Menyimpan jumlah karakter yang cocok
+      });
+    }
+  });
+
+  return regexMatches.length > 0 ? regexMatches : null;
+};
+function findHighestSimilarityIndex(matches) {
+  if (!Array.isArray(matches) || matches.length === 0) {
+    return -1; // Jika tidak ada hasil, kembalikan -1
+  }
+
+  let highestIndex = 0; // Indeks awal
+  let highestSimilarity = matches[0].similarity; // Nilai similarity tertinggi awal
+
+  matches.forEach((match, index) => {
+    if (match.similarity > highestSimilarity) {
+      highestSimilarity = match.similarity; // Memperbarui similarity tertinggi
+      highestIndex = index; // Memperbarui indeks tertinggi
+    }
+  });
+
+  return highestIndex; // Kembalikan indeks dengan similarity tertinggi
+}
+
+function replaceLettersAndRemoveCertainSpecialChars(word, charsToRemove) {
+  // Membuat regex berdasarkan karakter khusus yang ingin dihapus
+  const specialCharsRegex = new RegExp(`[${charsToRemove}]`, 'g');
+  
+  // Menghapus karakter khusus tertentu
+  var cleanedWord = word.replace(specialCharsRegex, '');
+  return cleanedWord;
+}
+
 class FilterBadWord{
 
 constructor(text = "", customFilter="", customSubFilter=""){
   
-    this._text = text;
-    
-    this._filt = /b[a4][s5]hfu[l1][l1]|[8b]r[e3][a4][s5]t|[b8][o0][o0][b8]|k[i1][l1][l1]|fuck[*]?|dr[uo]g[*]?|d[i1]ck[*]?|[a4][s5][s5]|[l1][i1]p|pu[s5][s5]y[*]?|fk/gi;
-    this._subfilter = /[a4][s5][s5]|[l1][i1]p|pu[s5][s5]y[*]?|[s5]uck[*]?|m[o0]th[e3]r[*]?|m[o0]m[*]?|d[o0]g[*]?|l[o0]w[*]?|s[e3]x[*]?|[8b]r[e3][a4][s5]t/gi;
-
+    this.__text__ = text;
+    // Default filter untuk mendeteksi kata kasar umum
+    this.__filt__ = /^b[a4][s5]hfu[l1][l1][^a-z]?|[8b]r[e3][a4][s5]t[^a-z]?|[b8][o0][o0][b8][^a-z]?|k[i1][l1][l1][^a-z]?|fuck[^a-z]?|dr[uo]g[^a-z]?|d[i1]ck[^a-z]?|[a4][s5][s5][^a-z]?|[l1][i1]p|pu[s5][s5]y[^a-z]?|fk[^a-z]?/gi;
+    this.__subfilter__ = /^[a4][s5][s5][^a-z]?|[l1][i1]p[^a-z]?|pu[s5][s5]y[^a-z]?|[s5]uck[^a-z]?|m[o0]th[e3]r[^a-z]?|m[o0]m[^a-z]?|d[o0]g[^a-z]?|l[o0]w[^a-z]?|s[e3]x[^a-z]?|[8b]r[e3][a4][s5]t/gi;
+    // Menambahkan filter kustom jika ada
     if (customFilter.length>3){
-        this._filt = new RegExp(this._filt.source+"|"+escapeRegExp(customFilter), "gi");
+        this.__filt__ = new RegExp(this.__filt__.source+"|"+escapeRegExp(customFilter), "gi");
     };
     if (customSubFilter.length>3){
-        this._subfilter = new RegExp(this._subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
+        this.__subfilter__ = new RegExp(this.__subfilter__.source+"|"+escapeRegExp(customSubFilter), "gi");
     };
     
     //mapping emoji
-    this.__emoji = new RegExp([
+    this.__emoji__ = new RegExp([
       '😈', // Sering digunakan untuk menunjukkan niat nakal atau licik.
       '👿', // Menunjukkan sifat jahat, sering digunakan dalam konteks humor atau kejahatan.
       '🍆', // Sering digunakan secara seksual, merujuk pada bentuknya yang mirip dengan organ genital pria.
@@ -150,14 +298,14 @@ constructor(text = "", customFilter="", customSubFilter=""){
       '🖕'  //  Menunjukkan penghinaan atau ketidaksenangan, sering dianggap sebagai gesture kasar.
     ].join("|"), "gi");
 
-    this.__subtxic = [];
+    this.__subtxic = []; // Penyimpanan untuk kata-kata kasar yang terdeteksi
     this._st = false;
 }
 
 
 static getboundPosition(word, _position){
   
-    var paragap, end;
+    var paragap, end, output;
     
     paragap = word;
     
@@ -172,8 +320,8 @@ static getboundPosition(word, _position){
       end = paragap.length;
     
     }
-
-    return paragap.substring(_position, end);
+    output = replaceLettersAndRemoveCertainSpecialChars(paragap.substring(_position, end), ".,"); // Pisahkan bagian kata
+    return output;
 }
 
 
@@ -207,8 +355,40 @@ static ['position_static'](word, filters){
         }else{
 
             wordlist_ = RegexMatch(json_[i].word, filters);
+
+            let findMissing  = findMissingParts(json_[i].word, filters);
+            
             if (wordlist_ != false) {
-                position_.push(json_[i].position_);
+            
+              position_.push(json_[i].position_);
+            
+            }else if(findMissing){
+            
+              if (findMissing.remaining && findMissing.matched==null){
+            
+                let findsimiliar = findSimilarMatches(replaceLettersAndRemoveCertainSpecialChars(findMissing.remaining, ".,"), filters), indexing = -1;
+            
+                indexing = findHighestSimilarityIndex(findsimiliar);
+            
+                if (indexing>=0){
+            
+                  const countChars = findsimiliar[indexing]?.countChars;
+            
+                  const halfMissingLength = Math.floor(findMissing.remaining.length / 2);
+            
+                  const iscountCharsValid = (countChars - findMissing.remaining.length) <= halfMissingLength;
+            
+                  const isSimilarityValid = findsimiliar[indexing].similarity >= 60;
+                  if (iscountCharsValid && isSimilarityValid) {
+            
+                      position_.push(json_[i].position_);
+            
+                  };
+            
+                };
+            
+              }
+            
             };
 
         }
@@ -221,8 +401,15 @@ static ['position_static'](word, filters){
 
 ['position']() {
   
-    var positionList = this.constructor.position_static(this._text.toString(), this._filt);
-
+    var positionList = this.constructor.position_static(this.__text__.toString(), this.__filt__);
+    if (positionList.length>0){
+      positionList = positionList.filter(check => {
+        const word_s = this.constructor.getboundPosition(this.__text__.toLowerCase().toString(), check);
+        // true jika kondisi _st aktif (true) dan word_s tidak cocok dengan filter atau subfilter.
+        // Jika kondisi tersebut tidak terpenuhi, maka word_s cocok dengan filter yang dikembalikan.
+        return (this._st && !(word_s.match(this.__filt__)||word_s.match(this.__subfilter__))) || word_s.match(this.__filt__);
+      });
+    };
     return positionList;
 
 }
@@ -237,7 +424,7 @@ get ['thisToxic'](){
     
     if (check != null || check != 0) {
     
-        var word = this._text.toLowerCase();
+        var word = this.__text__.toLowerCase();
     
         function before_str(number , key){
 
@@ -252,11 +439,11 @@ get ['thisToxic'](){
 
         for (var i = 0; i < check.length; i++) {
               
-              const word_s = this.constructor.getboundPosition(this._text.toLowerCase().toString() , check[i]);
+              const word_s = this.constructor.getboundPosition(this.__text__.toLowerCase().toString() , check[i]);
 
               before = before_str(0 , word_s).toString().split(" ");
 
-              after = after_str(word_s, this._text).toString().split(" ");
+              after = after_str(word_s, this.__text__).toString().split(" ");
 
               //console.log(word.indexOf(word_s));
               if (after.length >= 1 ){
@@ -288,7 +475,7 @@ get ['thisToxic'](){
               if (before){
                 before.forEach(d=>{
 
-                    if (d.match(this._subfilter)){
+                    if (d.match(this.__subfilter__)){
 
                         this.__subtxic.push([d, '*'.repeat(d.length)]);
                       
@@ -299,7 +486,7 @@ get ['thisToxic'](){
               if (after){
                 after.forEach(d=>{
 
-                    if (d.match(this._subfilter)){
+                    if (d.match(this.__subfilter__)){
 
                         this.__subtxic.push([d, '*'.repeat(d.length)]);
 
@@ -307,12 +494,11 @@ get ['thisToxic'](){
 
                 });
               };
-
               try{
                   
-                  if (before[before.length-1].match(this._subfilter) != null) {
+                  if (before[before.length-1].match(this.__subfilter__) != null) {
                       
-                      check_repr = before[before.length-1].match(this._subfilter);
+                      check_repr = before[before.length-1].match(this.__subfilter__);
 
                       if (check_repr != before[before.length-1]) {
                           //check ulang jika sensore tidak memenuhi persyaratan
@@ -333,9 +519,9 @@ get ['thisToxic'](){
 
                   }
 
-                  else if (after[0].match(this._subfilter) != null){
+                  else if (after[0].match(this.__subfilter__) != null){
 
-                      check_repr = after[0].match(this._subfilter);
+                      check_repr = after[0].match(this.__subfilter__);
 
                       if (check_repr != after[0]) {
 
@@ -356,9 +542,9 @@ get ['thisToxic'](){
 
                   }
 
-                  else if (after[1].match(this._subfilter) != null){
+                  else if (after[1].match(this.__subfilter__) != null){
 
-                      check_repr = after[1].match(this._subfilter);
+                      check_repr = after[1].match(this.__subfilter__);
 
                       if (check_repr != after[1]) {
 
@@ -384,7 +570,7 @@ get ['thisToxic'](){
                 }
               catch(err){
                 
-                if ( this._text.match(this._filt) != null) {
+                if ( this.__text__.match(this.__filt__) != null) {
                       
                       arry.push("Toxic");
                       arry.push(1);
@@ -420,37 +606,56 @@ set ['thisToxic'](key){
 
     var word;
     
-    if ((position || this.__subtxic) && this.__emoji.test(this._text) && this._st) {
-        this._text = this._text.replace(this.__emoji, "*");
+    function hasSpecialCharAtEnd(str) {
+      const specialCharRegex = /[!.,]+$/;
+      return specialCharRegex.test(str);
     };
 
-    word = this._text.split(" ");
+    if ((position || this.__subtxic) && this.__emoji__.test(this.__text__) && this._st) {
+        this.__text__ = this.__text__.replace(this.__emoji__, (matchedWord) => '*'.repeat(matchedWord.length-1));
+    };
 
-    position.forEach( number => {
+    word = this.__text__.split(" ");
 
-      const get_word = this.constructor.getboundPosition(this._text.toString() , number);
-
+    position.forEach(number => {
+      var get_word = this.constructor.getboundPosition(this.__text__.toString(), number);
       word.forEach((w, i) => {
-        if (!(validateInput("email", w) || validateInput("url", w))){
-
-            word[i] = w.replace(get_word, '*'.repeat(get_word.length));       
-        
-        };    
+          if (!(validateInput("email", w) || validateInput("url", w))) {
+            let specialChar = '';
       
+            // Jika ada karakter khusus di akhir, pisahkan karakter tersebut
+            const match = get_word.match(/^([a-zA-Z]+)([^a-zA-Z][0-9]*)$/);
+            if (hasSpecialCharAtEnd(w) && match) {
+              const [fullMatch, wordPart, specialPart] = match;
+              get_word = replaceLettersAndRemoveCertainSpecialChars(wordPart, ".,"); // Pisahkan bagian kata
+              specialChar = specialPart; // Pisahkan bagian karakter khusus
+            };
+            // Lakukan penggantian dan tambahkan karakter khusus di akhir (jika ada)
+            word[i] = w.replace(get_word, (matchedWord) => '*'.repeat(matchedWord.length)) + specialChar;
+          }
       });
-
     });
+    
   
     this.__subtxic.forEach(([oldWord, newWord]) => {
-  
       word.forEach((w, i) => {
-        if (!(validateInput("email", w) || validateInput("url", w)) && this._st){
+        if (!(validateInput("email", w) || validateInput("url", w)) && this._st) {
+          let specialChar = '';
           
-            word[i] = w.replace(oldWord, newWord);
-        
-        };
+          // Jika ada karakter khusus di akhir, pisahkan karakter tersebut
+          if (hasSpecialCharAtEnd(w) && oldWord.match(this.__subfilter__)) {
+              const match = oldWord.match(/^([a-zA-Z]+)([^a-zA-Z][0-9]*)$/);
+              if (match) {
+                const [fullMatch, wordPart, specialPart] = match;
+                oldWord = wordPart; // Pisahkan bagian kata
+                specialChar = specialPart; // Pisahkan bagian karakter khusus
+              };
+          };
+          
+          // Ganti oldWord dengan '*' tanpa mempengaruhi karakter khusus di akhir
+          word[i] = w.replace(oldWord, (matchedWord) => '*'.repeat(matchedWord.length)) + specialChar;
+        }
       });
-    
     });
 
     return word.join(" ");
@@ -464,7 +669,7 @@ class filters_badword extends FilterBadWord{
 
 ['text_o'](text){
   
-  this._text = text.toString();
+  this.__text__ = text.toString();
 
 }
 
@@ -484,19 +689,19 @@ class filters_badword extends FilterBadWord{
                                         validateInput("phone", value) || validateInput("url", value)) ? "" : value).
                                       filter(item => item && item.trim());
         if (readata.length>1){
-            this._subfilter = new RegExp(this._subfilter.source + "|" + escapeRegExp(readata.join("|")), "gi");
+            this.__subfilter__ = new RegExp(this.__subfilter__.source + "|" + escapeRegExp(readata.join("|")), "gi");
         };
     }else{
-      if (customSubFilter.includes("|")) this._subfilter = new RegExp(this._subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
+      if (customSubFilter.includes("|")) this.__subfilter__ = new RegExp(this.__subfilter__.source+"|"+escapeRegExp(customSubFilter), "gi");
     };
     isfiles = true;
   };
 
   if (customFilter.length>3){
-      this._filt = new RegExp(this._filt.source+"|"+escapeRegExp(customFilter), "gi");
+      this.__filt__ = new RegExp(this.__filt__.source+"|"+escapeRegExp(customFilter), "gi");
   };
   if (customSubFilter.length>3 && !isfiles){
-      this._subfilter = new RegExp(this._subfilter.source+"|"+escapeRegExp(customSubFilter), "gi");
+      this.__subfilter__ = new RegExp(this.__subfilter__.source+"|"+escapeRegExp(customSubFilter), "gi");
   };
 }
 
@@ -526,7 +731,7 @@ get ['cleans'](){
   }
   else{
     
-    return this._text.trim();
+    return this.__text__.trim();
   
   };
 
