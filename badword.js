@@ -868,14 +868,15 @@ get ['cleans']() {
       if (this.thisToxic[1] === 1 && this.thisToxic.length > 2) {
           // If smart processing is enabled
           if (this._st === true) {
-              var sensore = "*"; // Initialize the masking string
+              //var sensore = "*"; // Initialize the masking string
 
               // Create a string of asterisks of the same length as the toxic word
-              for (var i = 0; i < this.thisToxic[2].length; i++) {
-                  sensore += "*"; // Append asterisks for each character in the toxic word
-              }
+              //for (var i = 0; i < this.thisToxic[2].length; i++) {
+              //    sensore += "*"; // Append asterisks for each character in the toxic word
+              //}
               // Clean the text and replace the toxic word with asterisks
-              return this.clean(this.position()).replace(this.thisToxic[2], sensore);
+              return this.clean(this.position()).replace(this.__filt__, 
+                      (matchedWord) => '*'.repeat(matchedWord.length));
           }
 
           // If smart processing is not enabled, just clean the text
