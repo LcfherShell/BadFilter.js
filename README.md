@@ -46,7 +46,7 @@ Easy peasy, right? 🍋
 ### 2️⃣ **Node.js Setup**
 If you’re working on a Node.js project, just use this:
 ```javascript
-const { FilterBadWord, filters_badword } = require('./badword.js');
+const { FilterBadWord, filters_badword } = require('badfilter-js');
 
 // Express filtering using filters_badword
 const badfilter = new FilterBadWord("FUck master");
