@@ -46,7 +46,7 @@ Easy peasy, right? 🍋
 ### 2️⃣ **Node.js Setup**
 If you’re working on a Node.js project, just use this:
 ```javascript
-const { FilterBadWord, filters_badword } = require('badfilter-js');
+const { FilterBadWord, filters_badword } = require('./badword.js');
 
 // Express filtering using filters_badword
 const badfilter = new FilterBadWord("FUck master");
@@ -68,6 +68,21 @@ console.log(badfilt.position()); // Shows position of the bad words
 ```
 
 🔧 **Config it your way!** Customize how strict or lenient your filter should be using `.config()`. Want more control? You got it!
+
+---
+
+## 💡 **New Features in the Latest Update**
+
+We've added even more robust features to ensure that **BadFilter.js** remains your top choice for filtering offensive content:
+
+1. **Naughty or Offensive Emoji Filtering** 😈
+   - The latest version introduces the ability to filter out inappropriate or offensive emojis. Whether it's a sneaky emoji or something clearly distasteful, we’ve got it covered.
+
+2. **Prediction of Words Not in the Dictionary** 🔮
+   - This powerful new feature predicts and identifies words that may not exist in standard dictionaries but are assumed to be inappropriate or offensive. The filter smartly processes such words to ensure your app stays clean.
+
+3. **Improved Accuracy for Every Word** 🎯
+   - We've supercharged the accuracy for each word processed, making sure that even the slightest variation in inappropriate language gets caught. The ML-powered filter continues to learn and improve with every use, boosting precision.
 
 ---
 
