@@ -31,9 +31,9 @@ Here's the breakdown of the magic:
 Want to use BadFilter.js in your web app? No problem! Here’s how:
 ```html
 <!-- Add badword.js into the HTML page -->
-<script type="text/javascript" src="./badword.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/badfilter-js@1.2.2/badword.min.js"></script>
 <!-- Or import directly if supporting ES Module -->
-<script type="module" src="./badword.js">
+<script type="module" src="https://cdn.jsdelivr.net/npm/badfilter-js@1.2.2/badword.min.js">
 </script> 
 
 <script>
@@ -57,14 +57,14 @@ console.log(badfilter.clean(badfilter.position())); // Output: ***** master
 For full control over filtering, dive into the **filters_badword** class:
 ```javascript
 const badfilt = new filters_badword();
-badfilt.config(true, false); // Custom filtering settings
-badfilt.text_o("FUck master"); // Censored output: ***** master
-console.log(badfilt.cleans);
-console.log(badfilt.position()); // Shows position of the bad word
 
-badfilt.text_o("motherfucker");
-console.log(badfilt.cleans); // Output: *************
-console.log(badfilt.position());
+// Customize the filter settings
+badfilt.config(true, true, "hello|sss", "world|custom_subfilter");
+
+// Set text to be filtered
+badfilt.text_o("hello master sss");
+console.log(badfilt.cleans); // Output: ***** master ***
+console.log(badfilt.position()); // Shows position of the bad words
 ```
 
 🔧 **Config it your way!** Customize how strict or lenient your filter should be using `.config()`. Want more control? You got it!
