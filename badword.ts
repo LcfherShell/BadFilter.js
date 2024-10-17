@@ -79,8 +79,7 @@ function escapeRegExp(strings: string): string {
             .replace(/[o0]/g, "[o0]")
             .replace(/[e3]/g, "[e3]")
             .replace(/[b8]/g, "[b8]")
-            .replace(/[kx]/g, "[kx]")
-            + "[^a-z]?"; // Allow for a non-letter character at the end;
+            .replace(/[kx]/g, "[kx]");
         }
     }
 
@@ -273,7 +272,7 @@ class FilterBadWord {
     protected __subfilter__: RegExp;
     protected __emoji__: RegExp;
     protected __subtxic: [string, string][];
-    protected _st: boolean;
+    protected _st: boolean|{cEmoji:boolean, subObject:boolean, deepcensor:boolean};
 
     constructor(text: string = "", customFilter: string = "", customSubFilter: string = "") {
         this.__text__ = text;
@@ -388,6 +387,7 @@ class FilterBadWord {
     }
 
     public position(): number[] {
+        const thismart = typeof this._st === 'object' ? this._st?.deepcensor : this._st;
         // Call the static method to get a list of positions based on the text and filter
         var positionList = this.positionStatic(this.__text__.toString(), this.__filt__);
 
@@ -401,7 +401,7 @@ class FilterBadWord {
                 // Check conditions based on the _st status
                 // If _st is true and word_s does not match the main filter or subfilter,
                 // or if it matches the main filter, include it in the filtered list.
-                return (this._st && !(word_s.match(this.__filt__) || word_s.match(this.__subfilter__))) || word_s.match(this.__filt__);
+                return (thismart && !(word_s.match(this.__filt__) || word_s.match(this.__subfilter__))) || word_s.match(this.__filt__);
             });
         }
             return positionList;
@@ -462,7 +462,9 @@ class FilterBadWord {
     }
 
     public clean(position: number[]): string {
-        if ((position || this.__subtxic) && this.__emoji__.test(this.__text__) && this._st) {
+        const thismartsubObject = typeof this._st === 'object' ? this._st?.subObject : this._st, 
+        thismartEmoji= typeof this._st === 'object' ? this._st?.cEmoji : this._st;
+        if ((position || this.__subtxic) && this.__emoji__.test(this.__text__) && thismartEmoji) {
             // Replace emojis in the text with asterisks (keeping one character visible)
             this.__text__ = this.__text__.replace(this.__emoji__, '*'.repeat(1));
         };
@@ -477,7 +479,7 @@ class FilterBadWord {
         
         this.__subtxic.forEach(([oldWord, newWord]) => {
             words = words.map(word => {
-                return !(validateInput("email", word) || validateInput("url", word)) && this._st
+                return !(validateInput("email", word) || validateInput("url", word)) && thismartsubObject
                 ? word.replace(oldWord, newWord): word;
             });
         });
@@ -487,7 +489,7 @@ class FilterBadWord {
 
 class filters_badword extends FilterBadWord {
     protected _cl: boolean;
-    protected _st: boolean;
+    protected _st: boolean|{cEmoji:boolean, subObject:boolean, deepcensor:boolean};
     
     constructor() {
         super(); // Memanggil konstruktor kelas induk
@@ -499,7 +501,7 @@ class filters_badword extends FilterBadWord {
         this.__text__ = text.toString();
     }
 
-    public config(cl: boolean = true, smart: boolean = true, customFilter: string = "", customSubFilter: string = ""): void {
+    public config(cl: boolean = true, smart: boolean|{cEmoji:boolean, subObject:boolean, deepcensor:boolean} = true, customFilter: string = "", customSubFilter: string = ""): void {
         this._cl = cl;
         this._st = smart;
 
