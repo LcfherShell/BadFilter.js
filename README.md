@@ -59,7 +59,7 @@ For full control over filtering, dive into the **filters_badword** class:
 const badfilt = new filters_badword();
 
 // Customize the filter settings
-badfilt.config(true, true, "hello|sss", "world|custom_subfilter");
+badfilt.config(true, {cEmoji:true, subObject:false, deepcensor:true}, "dict|kick|chicky hu\|", "stupid|badly"); // Custom filtering settings
 
 // Set text to be filtered
 badfilt.text_o("hello master sss");
