@@ -23,6 +23,7 @@
 
 // Periksa lingkungan eksekusi
 const isNode = typeof exports === 'object' && typeof module !== 'undefined';
+
 /**
  * Function to check if the word matches the regex pattern
  * @param {string} word - the word string to be checked
@@ -524,23 +525,24 @@ static ['position_static'](word, filters){
  * in the text based on the specified filter.
  */
 ['position']() {
-  
-   // Call the static method to get a list of positions based on the text and filter
-   var positionList = this.constructor.position_static(this.__text__.toString(), this.__filt__);
+    const thismart = typeof this._st === 'object' ? this._st?.deepcensor : this._st;
+    // Call the static method to get a list of positions based on the text and filter
+    var positionList = this.constructor.position_static(this.__text__.toString(), this.__filt__);
 
-   // Check if the position list has any elements
-   if (positionList.length > 0) {
-       // Filter the position list based on specific conditions
-       positionList = positionList.filter(check => {
-           // Get the bound word for the current position
-           const word_s = this.constructor.getBoundPosition(this.__text__.toLowerCase().toString(), check);
-           
-           // Check conditions based on the _st status
-           // If _st is true and word_s does not match the main filter or subfilter,
-           // or if it matches the main filter, include it in the filtered list.
-           return (this._st && !(word_s.match(this.__filt__) || word_s.match(this.__subfilter__))) || word_s.match(this.__filt__);
-       });
-   }
+    // Check if the position list has any elements
+    if (positionList.length > 0) {
+        
+        // Filter the position list based on specific conditions
+        positionList = positionList.filter(check => {
+            // Get the bound word for the current position
+            const word_s = this.constructor.getBoundPosition(this.__text__.toLowerCase().toString(), check);
+            
+            // Check conditions based on the _st status
+            // If _st is true and word_s does not match the main filter or subfilter,
+            // or if it matches the main filter, include it in the filtered list.
+            return (thismart&& !(word_s.match(this.__filt__) || word_s.match(this.__subfilter__))) || word_s.match(this.__filt__);
+        });
+    };
     return positionList;
 
 }
@@ -705,8 +707,10 @@ set ['thisToxic'](key){
         return specialCharRegex.test(str);
     };
 
+    const thismartsubObject = typeof this._st === 'object' ? this._st?.subObject : this._st, 
+    thismartEmoji= typeof this._st === 'object' ? this._st?.cEmoji : this._st;
     // Check conditions for emoji handling
-    if ((position || this.__subtxic) && this.__emoji__.test(this.__text__) && this._st) {
+    if ((position || this.__subtxic) && this.__emoji__.test(this.__text__) && thismartEmoji) {
         // Replace emojis in the text with asterisks (keeping one character visible)
         this.__text__ = this.__text__.replace(this.__emoji__, () => '*'.repeat(1));
     };
@@ -744,7 +748,7 @@ set ['thisToxic'](key){
         // Iterate over the words array
         word.forEach((w, i) => {
             // Validate if the word is not an email or a URL and if _st is active
-            if (!(validateInput("email", w) || validateInput("url", w)) && this._st) {
+            if (!(validateInput("email", w) || validateInput("url", w)) && thismartsubObject) {
                 let specialChar = '';
                 
                 // Check for special characters at the end and separate them
@@ -791,7 +795,7 @@ class filters_badword extends FilterBadWord{
  *
  * @param {boolean} [cl=true] - Specifies whether cleaning 
  * (cleaning) will be enabled. Default is true.
- * @param {boolean} [smart=true] - Specifies whether smart processing 
+ * @param {boolean|{cEmoji:boolean, subObject:boolean, deepcensor:boolean}} [smart=true] - Specifies whether smart processing 
  * will be enabled. Default is true.
  * @param {string} [customFilter=“”] - Custom filters that can be 
  * added to the main filter. If the length is more than 3 characters, 
@@ -867,7 +871,8 @@ get ['cleans']() {
       // Check if the text is marked as toxic and has additional data
       if (this.thisToxic[1] === 1 && this.thisToxic.length > 2) {
           // If smart processing is enabled
-          if (this._st === true) {
+          const smart = typeof this._st === 'object' ? this._st?.deepcensor : this._st;
+          if (smart === true) {
               //var sensore = "*"; // Initialize the masking string
 
               // Create a string of asterisks of the same length as the toxic word
