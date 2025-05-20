@@ -1,0 +1,1153 @@
+"use strict";
+/*!
+ * BadFilter.js - A JavaScript utility for filtering offensive or unwanted words
+ * Copyright (c) 2024 LcfherShell
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/**
+ * Cleans text by normalizing characters and removing accents.
+ * @param text - The input text string.
+ * @returns The cleaned text string.
+ */
+function cleanText(text) {
+    return text
+        .normalize('NFKD') // Separate and remove styling
+        .replace(/[\u0300-\u036f]/g, '') // Remove accents/diacritics
+        .normalize('NFKC'); // Recombine into standard form
+}
+/**
+ * Calculate the length of characters a regex pattern would match
+ * This is a simplified version that works for basic patterns
+ * @param pattern - The regex pattern string.
+ * @returns The calculated length.
+ */
+function regexPatternLength(pattern) {
+    // This is a simplified version that works for basic patterns
+    // Replace character classes with a single character for length calculation
+    return pattern.replace(/\[[^\]]*\]\??/g, '1').length;
+}
+/**
+ * Split a regex pattern into its top-level alternatives (parts separated by |)
+ * @param pattern - The regex pattern string.
+ * @returns An array of top-level alternative strings.
+ */
+function splitTopLevelAlternatives(pattern) {
+    const result = [];
+    let current = '';
+    let depthParen = 0;
+    let inCharClass = false;
+    let escape = false;
+    for (let i = 0; i < pattern.length; i++) {
+        const char = pattern[i];
+        if (escape) {
+            current += char;
+            escape = false;
+            continue;
+        }
+        if (char === '\\') {
+            current += char;
+            escape = true;
+            continue;
+        }
+        if (char === '[' && !inCharClass) {
+            inCharClass = true;
+            current += char;
+            continue;
+        }
+        if (char === ']' && inCharClass) {
+            inCharClass = false;
+            current += char;
+            continue;
+        }
+        if (!inCharClass) {
+            if (char === '(') {
+                depthParen++;
+                current += char;
+                continue;
+            }
+            if (char === ')') {
+                if (depthParen > 0)
+                    depthParen--;
+                current += char;
+                continue;
+            }
+        }
+        // Only split if not in group, char class, or escape
+        if (char === '|' && !inCharClass && depthParen === 0) {
+            result.push(current.trim());
+            current = '';
+        }
+        else {
+            current += char;
+        }
+    }
+    if (current.length > 0) {
+        result.push(current.trim());
+    }
+    return result.filter(Boolean);
+}
+/**
+ * Merges array of words into meaningful tokens based on regex patterns
+ * with special handling for [.*] to match any additional characters until a space
+ * @param wordArray - The array of words to merge.
+ * @param fullPattern - The full regex pattern string.
+ * @returns An array of merged tokens.
+ */
+function mergeArrayByRegexPattern(wordArray, fullPattern) {
+    const patterns = splitTopLevelAlternatives(fullPattern);
+    // Create a new array to store the results
+    const result = [];
+    let i = 0;
+    while (i < wordArray.length) {
+        let matchFound = false;
+        // Try each pattern
+        for (const pattern of patterns) {
+            // Check for special [.*] pattern
+            const hasSpecialWildcard = pattern.match(/\[[\.]?\*\]\?/gi);
+            if (hasSpecialWildcard) {
+                // Get base part (before the [.*])
+                const basePart = pattern.split(/\[[\.]?\*\]\?/gi)[0];
+                // Try to find a match starting from current position
+                let currentMatch = '';
+                let j = i;
+                let baseMatched = false;
+                // First build up to match the base part
+                while (j < wordArray.length && !baseMatched) {
+                    const testMatch = currentMatch + wordArray[j];
+                    const baseRegex = new RegExp(`^${basePart}`, 'i');
+                    if (baseRegex.test(testMatch)) {
+                        // We found a match for the base part
+                        currentMatch = testMatch;
+                        j++;
+                        baseMatched = true;
+                    }
+                    else if (testMatch.length < basePart.length) {
+                        // Still building up to match the base
+                        currentMatch = testMatch;
+                        j++;
+                    }
+                    else {
+                        // We can't match the base part
+                        break;
+                    }
+                }
+                // If we matched the base part, collect everything until next space
+                // (which is represented by a new array element)
+                if (baseMatched) {
+                    matchFound = true;
+                    result.push(currentMatch);
+                    i = j;
+                    break;
+                }
+            }
+            else {
+                // For regular patterns, try different combinations
+                for (let lookAhead = 5; lookAhead >= 1; lookAhead--) {
+                    // Don't go beyond array bounds
+                    if (i + lookAhead > wordArray.length)
+                        continue;
+                    // Join consecutive elements to try to match
+                    const combined = wordArray.slice(i, i + lookAhead).join('');
+                    // Create regex from the pattern
+                    const regex = new RegExp(`^${pattern}$`, 'i');
+                    // Test if the combined elements match the pattern
+                    if (regex.test(combined)) {
+                        result.push(combined);
+                        i += lookAhead;
+                        matchFound = true;
+                        break;
+                    }
+                }
+            }
+            if (matchFound)
+                break;
+        }
+        // If no match was found, add the current element as is
+        if (!matchFound) {
+            result.push(wordArray[i]);
+            i++;
+        }
+    }
+    return result;
+}
+/**
+ * Converts specific characters in words (excluding the last few digits) based on a substitution map.
+ * @param comment - The input comment string.
+ * @param ignoreLastDigits - The number of digits at the end of a word to ignore during conversion.
+ * @returns The converted comment string.
+ */
+function convertCommentFixed(comment, ignoreLastDigits = 0) {
+    const substitutionMap = {
+        '1': 'i',
+        '2': 'z',
+        '3': 'e',
+        '4': 'a',
+        '5': 's',
+        '6': 'g',
+        '7': 't',
+        '8': 'b',
+        '9': 'g',
+        '0': 'o',
+        '!': 'i',
+        '&': 'e',
+        '@': 'a',
+        '#': 'h',
+        '$': 's',
+        '?': 'q',
+        '+': 't',
+        '*': 'x',
+        '_': 'l',
+        '%': 'o',
+        '|': 'l'
+    };
+    return comment.replace(/\b\w+\b/g, (word) => {
+        const len = word.length;
+        if (len <= ignoreLastDigits)
+            return word;
+        const convertPart = word.slice(0, len - ignoreLastDigits);
+        const remainPart = word.slice(len - ignoreLastDigits);
+        const converted = convertPart.replace(/[0-9!&@#$?+*_%|]/gi, (ch) => substitutionMap[ch.toLowerCase()] || ch);
+        return converted + remainPart;
+    });
+}
+/**
+ * Generate all possible variations of a word with one character missing
+ * @param word - The word to generate variations for
+ * @returns Array of all possible one-character-missing variations
+ */
+function generateMissingCharVariations(word) {
+    if (!word || word.length <= 1)
+        return [word];
+    const variations = [];
+    // Generate variations by removing one character at a time
+    for (let i = 0; i < word.length; i++) {
+        const variation = word.slice(0, i) + word.slice(i + 1);
+        variations.push(variation);
+    }
+    return variations;
+}
+/**
+ * Checks if a word matches a regex pattern, including various leetspeak and formatting variations.
+ * @param word - The word to check.
+ * @param regex - The regex pattern to match against.
+ * @returns True if the word matches the regex (or a variation), false otherwise.
+ */
+function RegexMatch(word, regex) {
+    if (!word || typeof word !== 'string')
+        return false;
+    word = word.trim().toLowerCase();
+    if (!word)
+        return false;
+    if (word.match(regex))
+        return true;
+    const substitutionPairs = [
+        ['3', 'e'],
+        ['0', 'o'],
+        ['4', 'a'],
+        ['5', 's'],
+        ['8', 'b'],
+        ['1', 'i'],
+        ['1', 'l'],
+        ['6', 'g'],
+        ['7', 't'],
+        ['$', 's'],
+        ['@', 'a'],
+        ['+', 't'],
+        ['(', 'c'],
+        [')', 'o'],
+        ['|', 'l'],
+        ['_', ' '],
+        ['2', 'z'],
+        ['9', 'g'],
+        ['k', 'c'],
+        ['x', 'k'],
+        ['ph', 'f'],
+        ['u', 'v'],
+        ['v', 'u'],
+        ['vv', 'w'],
+        ['uu', 'w'],
+        ['kk', 'c'],
+        ['ck', 'k'],
+        ['/-\\', 'a'],
+        ['|3', 'b'],
+        ['|)', 'd'],
+        ['[-', 'e'],
+        ['|=', 'f'],
+        ['/-/', 'h'],
+        ['_|', 'j'],
+        ['/<', 'k'],
+        ['|\\|', 'n'],
+        ['|*', 'p'],
+        ['|2', 'r'],
+        ['~|~', 't'],
+        ['\\/\\/', 'w'],
+        ['><', 'x']
+    ];
+    for (const [leet, norm] of substitutionPairs) {
+        if (word.includes(leet)) {
+            const substituted = word.replace(new RegExp(leet, 'gi'), norm);
+            if (substituted.match(regex))
+                return true;
+        }
+    }
+    if (word.replace(/[\s._\-*]/g, '').match(regex))
+        return true;
+    if (word.replace(/(.)\1+/g, '$1').match(regex))
+        return true;
+    // Check for words with one missing character
+    // First apply leetspeak substitutions
+    let normalizedWord = word;
+    for (const [leet, norm] of substitutionPairs) {
+        if (normalizedWord.includes(leet)) {
+            normalizedWord = normalizedWord.replace(new RegExp(leet, 'gi'), norm);
+        }
+    }
+    // Generate variations with one missing character
+    const variations = generateMissingCharVariations(normalizedWord);
+    for (const variation of variations) {
+        if (variation.match(regex))
+            return true;
+    }
+    const progressiveBuild = [];
+    for (let ch of word) {
+        progressiveBuild.push(ch.trim());
+        let composed = progressiveBuild.join('');
+        if (composed.match(regex))
+            return true;
+        for (const [leet, norm] of substitutionPairs) {
+            if (composed.includes(leet)) {
+                const substituted = composed.replace(new RegExp(leet, 'gi'), norm);
+                if (substituted.match(regex))
+                    return true;
+            }
+        }
+    }
+    return false;
+}
+/**
+ * Enhanced version of RegexMatch that also checks for missing characters
+ * @param word - The word to check
+ * @param regex - The regex pattern to match against
+ * @param badWords - Original list of bad words to check against
+ * @returns True if word matches any variation, false otherwise
+ */
+function EnhancedRegexMatch(word, regex, badWords = []) {
+    // First try the standard RegexMatch
+    if (RegexMatch(word, regex))
+        return true;
+    if (!word || word.length <= 1)
+        return false;
+    // Clean the word and normalize it
+    const cleanedWord = word.trim().toLowerCase();
+    // Check each bad word in the list for close matches
+    for (const badWord of badWords) {
+        // If word is already shorter than badWord minus 1, it can't be a match with just one missing character
+        if (cleanedWord.length < badWord.length - 1)
+            continue;
+        // If they're the same length, then check if removing one character from badWord would match
+        if (cleanedWord.length === badWord.length) {
+            const variations = generateMissingCharVariations(badWord);
+            if (variations.includes(cleanedWord))
+                return true;
+        }
+        // If cleanedWord is one character shorter than badWord, check if it's a match with one missing character
+        if (cleanedWord.length === badWord.length - 1) {
+            // Check if cleanedWord could be badWord with one character missing
+            let matchesWithMissing = false;
+            let missingCharIndex = -1;
+            for (let i = 0; i < badWord.length; i++) {
+                const testWord = badWord.slice(0, i) + badWord.slice(i + 1);
+                if (testWord === cleanedWord) {
+                    matchesWithMissing = true;
+                    missingCharIndex = i; // This variable is set but not used later, preserving original logic
+                    break;
+                }
+            }
+            if (matchesWithMissing)
+                return true;
+        }
+    }
+    return false;
+}
+/**
+ * Escapes a pipe-separated string of patterns for use in a RegExp,
+ * applying leetspeak-like character class substitutions and optional fuzzy matching.
+ * @param strings - The input string containing pipe-separated patterns.
+ * @returns The source string for a RegExp.
+ */
+function escapeRegExp(strings) {
+    const data = strings.trim().toLowerCase().split("|").filter(Boolean);
+    for (let index = 0; index < data.length; index++) {
+        const element = data[index];
+        if (!((element.includes("(") && element.includes(")")) ||
+            (element.includes("[") && element.includes("]")))) {
+            data[index] = data[index]
+                .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                .replace(/[a4]/g, "[a4]")
+                .replace(/[s5]/g, "[s5]")
+                .replace("i", "[i1]")
+                .replace("l", "[l1]")
+                .replace(/[o0]/g, "[o0]")
+                .replace(/[e3]/g, "[e3]")
+                .replace(/[b8]/g, "[b8]")
+                .replace(/[kx]/g, "[kx]");
+        }
+        if (data[index].length > 2 && !data[index].includes('[')) {
+            const fuzzy = data[index].split('').join('[\\s._*-]?');
+            data[index] = fuzzy;
+        }
+    }
+    return new RegExp(data.join("|")).source;
+}
+/**
+ * Validates an input string against common data type regex patterns.
+ * @param type - The type of validation ('email', 'phone', 'url', 'username', 'ip').
+ * @param value - The string value to validate.
+ * @returns True if the value matches the pattern for the given type, false otherwise.
+ */
+function validateInput(type, value) {
+    if (!value || typeof value !== 'string')
+        return false;
+    let regex;
+    switch (type) {
+        case 'email':
+            regex = /^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}$/;
+            break;
+        case 'phone':
+            regex = /^(\+\d{1,3}[- ]?)?(\(\d{1,4}\)|\d{1,4})[- ]?\d{1,4}[- ]?\d{1,9}$/;
+            break;
+        case 'url':
+            regex = /^(https?:\/\/)?([\w-]+\.)+[\w-]{2,}(\/[^\s]*)?$/i;
+            break;
+        case 'username':
+            regex = /^[a-zA-Z0-9_-]{3,20}$/;
+            break;
+        case 'ip':
+            regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+            break;
+        default:
+            return false;
+    }
+    return regex.test(value);
+}
+/**
+ * Extract all base bad words from a regex pattern
+ * @param regexSource - The regex source pattern
+ * @returns Array of base bad words
+ */
+function extractBaseBadWords(regexSource) {
+    const patterns = splitTopLevelAlternatives(regexSource);
+    const baseWords = [];
+    for (const pattern of patterns) {
+        // Try to extract the base word from the pattern by removing character classes
+        let baseWord = pattern
+            .replace(/\[[^\]]*\]/g, '') // Remove character classes
+            .replace(/[\^\$\\(){}\[\]*+?|.]/g, ''); // Remove regex special chars
+        // If we have a meaningful base word, add it
+        if (baseWord.length >= 3) {
+            baseWords.push(baseWord);
+        }
+    }
+    return baseWords;
+}
+class FilterBadWord {
+    /**
+     * @param text - Text to filter
+     * @param customFilter - Custom bad words pipe-separated
+     * @param customSubFilter - Custom contextual bad words pipe-separated
+     * @param options - Additional options
+     */
+    constructor(text = "", customFilter = "", customSubFilter = "", options = {}) {
+        this._origintext = text;
+        this._text = cleanText(text).trim();
+        this._options = {
+            filterUrls: false,
+            filterEmails: false,
+            contextSensitivity: 2,
+            filterSeverity: 2,
+            replaceChar: '*',
+            preserveFirstLast: false,
+            preserveLength: true,
+            detectMissingChars: true,
+            ignoreLastDigits: 0,
+            ...options
+        };
+        // Base toxic words filter - expanded from original
+        const baseFilterPatterns = [
+            // Original terms
+            'b[a4][s5]hfu[l1][l1]', 'k[i1][l1][l1]', 'fuck[*]?', 'dr[uo]g[*]?', 'd[i1]ck[*]?',
+            '[a4][s5][s5]', '[l1][i1]p', 'pu[s5][s5]y[*]?', 'fk', 'n[a4]k[e3]d',
+            // Additional common toxic terms
+            'sh[i1]t', 'b[i1]tch', 'c[uo]nt', 'wh[o0]r[e3]', 'sl[u]t', 'r[a4]p[e3]',
+            'n[i1]gg[a4e3]r', 'f[a4]gg[o0]t', 'r[e3]t[a4]rd', 'd[uo]mb[a4][s5][s5]',
+            'c[o0]ck', '[a4]n[a4]l', 'b[o0][o0]b', 'p[o0]rn', 'p[e3]n[i1][s5]',
+            'v[a4]g[i1]n[a4]', 'h[o0]rny', 'j[e3]rk[o0]ff', 'j[a4]ck[o0]ff',
+            'c[uo][uo]m', '[s5][e3]m[e3]n', '[s5]p[e3]rm', '[o0]rg[a4][s5]m'
+        ];
+        this._filt = new RegExp(baseFilterPatterns.join('|'), 'gi');
+        this._emoji = new RegExp([
+            // Emoji dengan penjelasan
+            '😈',
+            '👿',
+            '🍆',
+            '🍑',
+            '🐄',
+            '🐐',
+            '🍋',
+            '🌈',
+            '🏳️‍🌈',
+            '🍉',
+            '💦',
+            '😍',
+            '🥵',
+            '🤤',
+            '🥥',
+            '👙',
+            '💣',
+            '🔪',
+            '🔫',
+            '⚔️',
+            '💥',
+            '🔨',
+            '🖕' // Menunjukkan penghinaan atau ketidaksenangan; sering dianggap sebagai gesture kasar.
+        ].join("|"), "gi");
+        // Contextual filtering for words that may be toxic in certain contexts
+        const baseSubfilterPatterns = [
+            // Original terms
+            '[a4][s5][s5]', '[l1][i1]p', 'pu[s5][s5]y[*]?', '[s5]uck[*]?',
+            'm[o0]th[e3]r[*]?', 'm[o0]m[*]?', 'd[o0]g[*]?', 'l[o0]w[*]?', 's[e3]x[*]?',
+            // Additional contextual terms
+            'h[a4]rd', 'w[e3]t', 'h[o0]t', 'r[i1]d[e3]', 'r[i1]d[i1]ng', 'b[a4]ng',
+            '[e3][a4]t', 'bl[o0]w', 'h[e3][a4]d', 'g[i1]v[e3]', 't[a4]k[e3]', 'f[o0]rc[e3]',
+            'd[e3][e3]p', 'f[a4]c[e3]', 'r[ou][o0]m', 'b[e3]d', 'n[a4]k[e3]d',
+            'thr[o0][a4]t', 'sp[a4]nk', 'ch[o0]k[e3]', 'pl[a4]y', 'c[o0]m[e3]',
+            'w[a4]tch', 'l[i1]ck', 'r[i1]d[e3]', 'gr[i1]nd'
+        ];
+        this._subfilter = new RegExp(baseSubfilterPatterns.join('|'), 'gi');
+        // Add custom filters if provided
+        if (customFilter && customFilter.length > 3) {
+            this._filt = new RegExp(this._filt.source + "|" + escapeRegExp(customFilter), "gi");
+            // Also add custom bad words to base list
+            // NOTE: The original code initializes _baseBadWords *after* this block,
+            // meaning this concat call would fail or operate on an undefined variable.
+            // I've moved the _baseBadWords initialization before this block in the TS code.
+            // However, the original JS code *also* calls extractBaseBadWords *after* this block,
+            // which would overwrite any additions made here.
+            // To match the *likely intent* (add custom words to the list used for missing char detection),
+            // I will add them *after* the initial extraction.
+        }
+        // Extract base bad words for missing character detection
+        this._baseBadWords = extractBaseBadWords(this._filt.source);
+        // Add custom bad words to the base list *after* initial extraction
+        if (customFilter && customFilter.length > 3) {
+            this._baseBadWords = this._baseBadWords.concat(customFilter.toLowerCase().split('|').filter(word => word.length >= 3));
+        }
+        if (customSubFilter && customSubFilter.length > 3) {
+            this._subfilter = new RegExp(this._subfilter.source + "|" + escapeRegExp(customSubFilter), "gi");
+        }
+        // NOTE: The original code calls mergeArrayByRegexPattern here, but the placeholder
+        // implementation simply joins the words back. This line might need adjustment
+        // if the actual mergeArrayByRegexPattern function has complex logic.
+        this._text = mergeArrayByRegexPattern(this._text.split(" "), this._filt.source).join(" ");
+        this.__subtxic = []; // Contextual toxic matches
+        this.__originRegex = splitTopLevelAlternatives(this._filt.source); // Regex pattern for each alternative
+        this._st = true; // Substitute flag (renamed from original for clarity)
+        this._toxicWords = []; // Store found toxic words
+        this._toxicPositions = []; // Store positions of toxic words
+        this._toxicScore = 0; // Toxicity score (0-100)
+    }
+    /**
+     * Extract a word at a specific position
+     * @param text - Text to extract from
+     * @param position - Position to extract at
+     * @return - Extracted word
+     */
+    static getboundPosition(text, position) {
+        if (!text || typeof text !== 'string')
+            return '';
+        // Find word boundaries
+        let start = position;
+        while (start > 0 && text[start - 1] !== ' ')
+            start--;
+        let end = position;
+        while (end < text.length && text[end] !== ' ')
+            end++;
+        return text.substring(start, end);
+    }
+    /**
+     * Find positions of toxic words
+     * @param text - Text to search
+     * @param regex - Regex pattern to search for
+     * @param regexMatch - Original regex patterns to search for
+     * @param baseBadWords - Original list of bad words to check against
+     * @param detectMissingChars - Whether to detect words with one character missing
+     * @return - Array of positions
+     */
+    static position_static(text, regex, regexMatch, baseBadWords, detectMissingChars = true) {
+        if (!text || typeof text !== 'string')
+            return [];
+        //create new checkpoint
+        const dotTextLength = (text.match(/\./g) || []).length;
+        const textLength = text.replace(/[ .,]/g, "").length;
+        if ((textLength-dotTextLength)>1200) throw new Error("Text length exceeds 1200 characters (excluding periods).");
+
+        const words = text.split(' '); // Split text into words
+        let currentPosition = 0;
+        let positions = []; // Track position in text
+        for (let i = 0; i < words.length; i++) {
+            const word = words[i];
+            let matchs = null;
+            let isMatch = false;
+            // Direct regex match check
+            if (word.match(regex)) {
+                matchs = word.match(regex);
+                isMatch = true;
+                if (matchs && matchs[0] !== word) {
+                    // This block seems to handle partial matches within a word
+                    // and checks for common suffixes.
+                    const rpartner = new RegExp(`${escapeRegExp(matchs[0])}(.*)`, 'gi');
+                    const partialMatch = word.match(rpartner);
+                    if (partialMatch && partialMatch[0].match(/er|ing|in|en|an|[\']?r/gi)) {
+                        // Check if the partial match plus suffix is the whole word or a significant part
+                        // This logic is a bit ambiguous in the original JS.
+                        // Assuming it means if the *original* word contains the regex match followed by a suffix.
+                        // The original code pushes currentPosition if the suffix match is found.
+                        // This might lead to incorrect positions if the match isn't at the start of the word.
+                        // Preserving original logic: push position if suffix matches the *remainder* of the word after the match.
+                        const remainder = partialMatch[1]; // The (.*) part
+                        if (remainder && remainder.match(/er|ing|in|en|an|[\']?r/gi)) {
+                            positions.push(currentPosition);
+                        }
+                        else {
+                            // If no suffix match, treat as a full word match at this position
+                            positions.push(currentPosition);
+                        }
+                    }
+                    else if (matchs[0].length > 0) {
+                        // If it's a partial match but no suffix, still consider it a match at this position
+                        positions.push(currentPosition);
+                    }
+                }
+                else if (matchs && matchs[0].length > 0) {
+                    // Full word match
+                    positions.push(currentPosition);
+                }
+            }
+            // Check with leetspeak conversion
+            else if (RegexMatch(word, regex)) {
+                positions.push(currentPosition);
+                isMatch = true;
+            }
+            // Check with missing character detection if enabled
+            else if (detectMissingChars && EnhancedRegexMatch(word, regex, baseBadWords)) {
+                positions.push(currentPosition);
+                isMatch = true;
+            }
+            // Check after leetspeak conversion
+            else {
+                const convertedWord = convertCommentFixed(word);
+                if (convertedWord !== word && (convertedWord.match(regex) ||
+                    RegexMatch(convertedWord, regex) ||
+                    (detectMissingChars && EnhancedRegexMatch(convertedWord, regex, baseBadWords)))) {
+                    positions.push(currentPosition);
+                    isMatch = true;
+                }
+            }
+            // Check regex pattern length against word length
+            // This block seems intended to filter out matches where the regex pattern
+            // is significantly shorter than the word, unless the pattern is flexible (like ending in ? or .*?).
+            // The logic is complex and relies on the `regexPatternLength` and `splitTopLevelAlternatives` helpers.
+            // Preserving the original logic as closely as possible.
+            if (isMatch) {
+                // Find which specific pattern within the regex matched the word
+                const matchingPatterns = regexMatch.filter(pattern => {
+                    try {
+                        // Create a temporary regex for the specific pattern
+                        const tempRegex = new RegExp(`^${pattern}$`, 'gi'); // Anchor to check if the *word* matches the *pattern*
+                        // Need to test against the original word and potentially converted word
+                        return tempRegex.test(word) || tempRegex.test(convertCommentFixed(word));
+                    }
+                    catch (e) {
+                        console.error("Error testing pattern:", pattern, e);
+                        return false;
+                    }
+                });
+                let shouldRemoveLastPosition = false;
+                for (const pattern of matchingPatterns) {
+                    const lengthregex = regexPatternLength(pattern);
+                    const regexMatchx = pattern; // Renamed for clarity
+                    // Check if the pattern is flexible (ends with optional group/char or wildcard)
+                    const isFlexiblePattern = regexMatchx.match(/(\)|\])\?$/) || regexMatchx.match(/\.\*(\)|\])?$/);
+                    if (lengthregex != null && regexMatchx != null) {
+                        // If pattern length is known and it's not a flexible pattern,
+                        // check if the word length matches the pattern length.
+                        // If they don't match, mark for removal.
+                        if (!isFlexiblePattern && lengthregex !== word.length) {
+                            shouldRemoveLastPosition = true;
+                            // Break here? Or check all matching patterns? Original logic is unclear.
+                            // Assuming if *any* matching pattern fails the length check (and isn't flexible),
+                            // the position added for this word should be removed.
+                            break;
+                        }
+                    }
+                    else {
+                        // If pattern length cannot be determined or is null,
+                        // check for specific flexible patterns like .*?
+                        if (regexMatchx && regexMatchx.match(/\.\*(\)|\])\?/gi)) {
+                            // This pattern is flexible, keep the position.
+                            shouldRemoveLastPosition = false; // Override if a flexible pattern matches
+                            // Continue checking other matching patterns? Original logic unclear.
+                            // Assuming if *any* flexible pattern matches, the position is valid.
+                            break;
+                        }
+                        else {
+                            // If length is null and it's not a recognized flexible pattern,
+                            // this case is ambiguous. Original code seems to just add the position
+                            // and then rely on the Set conversion later. Let's follow that.
+                            // No change to shouldRemoveLastPosition here based on original flow.
+                        }
+                    }
+                }
+                // If marked for removal and there's a position added for this word, remove it.
+                // This assumes the last position added corresponds to the current word.
+                if (shouldRemoveLastPosition && positions.length > 0) {
+                    // Find the position corresponding to the start of the current word
+                    const indexToRemove = positions.lastIndexOf(currentPosition);
+                    if (indexToRemove !== -1) {
+                        positions.splice(indexToRemove, 1);
+                    }
+                }
+                // The original code has `positions = [...new Set(positions)];` inside the loop.
+                // This is inefficient. It should likely be outside the loop.
+                // However, to preserve exact original behavior (even if inefficient),
+                // I will keep it inside.
+                positions = [...new Set(positions)];
+            }
+            // Update position for next word (including space)
+            currentPosition += word.length + 1; // +1 for space
+        }
+        // The original code had the Set conversion inside the loop.
+        // If it was intended to be outside, move it here:
+        // positions = [...new Set(positions)];
+        return positions;
+    }
+    /**
+     * Get positions of toxic words in the text
+     * @return - Array of positions
+     */
+    position() {
+        let regexMatch = [];
+        // The original code iterates through __originRegex and checks if the *entire* _text matches the *single* pattern.
+        // This seems incorrect. It should likely check if the pattern exists *within* the text,
+        // or perhaps if the pattern matches *any word* in the text.
+        // Given the usage in position_static, regexMatch is used to check pattern length against word length.
+        // This implies regexMatch should contain the *specific patterns* from the main regex (_filt)
+        // that were responsible for a match in the text.
+        // The original loop `if (this._text.match(regex))` is likely wrong.
+        // A more plausible interpretation is to find which *original patterns* from `__originRegex`
+        // are present *anywhere* in the text (or contribute to a match).
+        // However, strictly following the original code's logic:
+        for (let index = 0; index < this.__originRegex.length; index++) {
+            const element = this.__originRegex[index];
+            // Create a regex for the specific element pattern
+            // The original code uses `new RegExp(`${element}`, 'gi')` which is redundant if element is already a regex string part.
+            // It should likely be `new RegExp(element, 'gi')` or test if the element string is found.
+            // Let's assume it means testing if the *pattern string* exists in the text, which is also weird.
+            // A more likely intent is to see which *patterns* from the original regex *could* match something in the text.
+            // Let's stick to the literal translation of `this._text.match(regex)` where `regex` is built from the element.
+            try {
+                const regex = new RegExp(element, 'gi'); // Assuming element is a valid regex part
+                if (this._text.match(regex)) {
+                    regexMatch.push(element);
+                }
+            }
+            catch (e) {
+                console.error("Error creating regex from element:", element, e);
+                // Skip this element if it's an invalid regex part
+            }
+        }
+        // If no patterns matched the entire text (based on the original loop logic),
+        // regexMatch will be empty. position_static uses this list.
+        // This might be a bug in the original JS.
+        // To ensure position_static has patterns to check length against,
+        // we should probably pass the full list `this.__originRegex` or the list
+        // of patterns that actually matched *words* found by `position_static`.
+        // Sticking to the original code's flow: pass the potentially empty `regexMatch`.
+        return FilterBadWord.position_static(this._text, this._filt, regexMatch, // This might be empty due to the loop logic above
+        this._baseBadWords, this._options.detectMissingChars);
+    }
+    /**
+     * Check if text contains contextual toxic words
+     * @param text - Text to check
+     * @return - Whether text contains contextual toxic words
+     */
+    checkContextualToxicity(text) {
+        if (!text || typeof text !== 'string')
+            return false;
+        const words = text.toLowerCase().split(' ');
+        // Check for pairs of words that together form toxic content
+        for (let i = 0; i < words.length - 1; i++) {
+            const pair = words[i] + ' ' + words[i + 1];
+            // Check if this pair contains combinations of contextual words
+            if ((words[i].match(this._subfilter) && words[i + 1].match(this._filt)) ||
+                (words[i].match(this._filt) && words[i + 1].match(this._subfilter))) {
+                this.__subtxic.push([pair, this._options.replaceChar.repeat(pair.length)]);
+                return true; // Return true on first match found
+            }
+        }
+        return false;
+    }
+    /**
+     * Calculate toxicity score based on found toxic words
+     * @return - Toxicity score (0-100)
+     */
+    calculateToxicityScore() {
+        const toxicCount = this._toxicWords.length;
+        const totalWords = this._text.split(' ').length;
+        if (totalWords === 0)
+            return 0; // Avoid division by zero
+        if (toxicCount === 0)
+            return 0;
+        // Base score on percentage of toxic words
+        // Original calculation: Math.min(100, Math.round((toxicCount / totalWords) * 100) * 2);
+        // This can result in scores > 100 before the final Math.min.
+        // Example: 1 toxic word in 2 words = (1/2)*100 = 50. 50*2 = 100.
+        // Example: 1 toxic word in 1 word = (1/1)*100 = 100. 100*2 = 200. Math.min(100, 200) = 100.
+        // The calculation seems intended to give a base score up to 100 based on density.
+        let score = Math.min(100, Math.round((toxicCount / totalWords) * 100) * 2);
+        // Increase score based on severity of words found
+        for (const word of this._toxicWords) {
+            // Check for highly offensive terms
+            // Using test() for efficiency as we only need a boolean
+            if (/n[i1]gg[ae3]r|c[ou]nt|r[a4]p[e3]/i.test(word)) {
+                score += 20;
+            }
+        }
+        return Math.min(100, score);
+    }
+    /**
+     * Check if text is toxic
+     * @return - Toxicity information or false
+     */
+    get thisToxic() {
+        // Pre-process text if not already done
+        // NOTE: The original code checks `this._options.preprocessLeetspeak` but the constructor
+        // *always* calls `cleanText` and `trim`, it doesn't seem to have a separate
+        // leetspeak preprocessing step controlled by this option.
+        // The `convertCommentFixed` call here seems redundant if `cleanText` already handles leetspeak.
+        // However, preserving the original logic flow.
+        // Also, `ignoreLastDigits` is used here in `convertCommentFixed` but not initialized in options.
+        // Added `ignoreLastDigits` to the FilterOptions interface.
+        const normalizedText = this._options.preprocessLeetspeak ?
+            this._text : // Assuming _text is already normalized if this option is true
+            convertCommentFixed(this._text, this._options.ignoreLastDigits);
+        // Get positions of toxic words
+        // NOTE: The `position()` method uses `this._text`, not `normalizedText`.
+        // This might be inconsistent if `convertCommentFixed` changes the text structure/positions.
+        // Preserving original behavior by calling `this.position()`.
+        const positions = this.position();
+        if (!positions.length)
+            return ["Notoxic", 0];
+        this._toxicPositions = positions;
+        // Original code returns ["Toxic", 1] initially, then pushes score.
+        // The return type should reflect this: [string, number] or [string, number, number].
+        const result = ["Toxic", 1];
+        const text = this._text.toLowerCase(); // Use the cleaned text for finding words
+        // Find toxic words based on positions
+        this._toxicWords = []; // Clear previous findings
+        for (const position of positions) {
+            const toxicWord = FilterBadWord.getboundPosition(text, position);
+            if (toxicWord) { // Only add if a word was found at the position
+                this._toxicWords.push(toxicWord);
+            }
+        }
+        // Check for contextual toxicity
+        // NOTE: The original code calls checkContextualToxicity *after* finding toxic words
+        // and uses the *positions* of the found toxic words to check surrounding words.
+        // The `checkContextualToxicity` method itself iterates through *all* word pairs.
+        // This seems like a potential logic error in the original JS.
+        // The loop below iterates surrounding words and checks them against `_subfilter`.
+        // It then pushes the *surrounding word* to the `result` array if it matches `_subfilter`.
+        // This means the `result` array can contain ["Toxic", 1, surroundingWord1, surroundingWord2, ..., score].
+        // This contradicts the expected return type of ["Toxic", 1, score].
+        // The `__subtxic` property is populated by `checkContextualToxicity` when called directly,
+        // but the loop below also seems to be doing a form of contextual check and populating `result`.
+        // Let's preserve the original loop's behavior of adding surrounding words to `result`,
+        // even though it makes the return type inconsistent with the initial ["Toxic", 1].
+        // The return type will be `Array<string | number>`.
+        // Re-evaluating the return type based on the loop:
+        // It starts as ["Toxic", 1].
+        // It pushes surrounding words (strings).
+        // It pushes the score (number).
+        // So the return type is `Array<string | number>`.
+        const finalResult = ["Toxic", 1];
+        if (this._options.contextSensitivity > 0) {
+            const words = text.split(' ');
+            // Check words near toxic words for context
+            for (const position of positions) {
+                // Find the index of the word containing the position
+                let wordIndex = -1;
+                let currentPos = 0;
+                for (let i = 0; i < words.length; i++) {
+                    if (currentPos <= position && position < currentPos + words[i].length) {
+                        wordIndex = i;
+                        break;
+                    }
+                    currentPos += words[i].length + 1; // +1 for space
+                }
+                if (wordIndex === -1)
+                    continue; // Should not happen if position is valid
+                // Check surrounding words based on sensitivity
+                const sensitivity = this._options.contextSensitivity;
+                const startIdx = Math.max(0, wordIndex - sensitivity);
+                const endIdx = Math.min(words.length - 1, wordIndex + sensitivity);
+                for (let i = startIdx; i <= endIdx; i++) {
+                    if (i === wordIndex)
+                        continue; // Skip the toxic word itself
+                    // Check if the surrounding word matches the subfilter
+                    if (words[i].match(this._subfilter)) {
+                        // The original code pushes the surrounding word to `result`.
+                        // It also populates `__subtxic` here, which is redundant if
+                        // `checkContextualToxicity` is called elsewhere.
+                        // Let's populate `__subtxic` here as well to match original flow.
+                        const surroundingWord = words[i];
+                        this.__subtxic.push([surroundingWord, this._options.replaceChar.repeat(surroundingWord.length)]);
+                        finalResult.push(surroundingWord); // Add surrounding word to the result array
+                    }
+                }
+            }
+        }
+        // Calculate toxicity score
+        this._toxicScore = this.calculateToxicityScore();
+        finalResult.push(this._toxicScore); // Add score to the result array
+        // The original code returns `result` which is `finalResult` here.
+        // The return type is `Array<string | number>`.
+        // However, the example usage `console.log(toxicfilter.getToxicityInfo()); // ["Toxic", 1, scoreValue]`
+        // and `console.log(toxicfilter.clean()); // "This is a **** bad word test"`
+        // suggests the `getToxicityInfo` method is the primary way to get results,
+        // and `getToxicityInfo` expects `thisToxic` to return something like `["Toxic", 1]` or `["Toxic", 1, score]`.
+        // The loop adding surrounding words to the result array seems like a potential bug or
+        // unintended side effect in the original JS.
+        // To strictly match the *code as written*, the return type is `Array<string | number>`.
+        // To match the *likely intent* based on example usage, the return type should be `[string, number] | [string, number, number]`.
+        // Let's stick to the *code as written* for the translation, but add a note about the potential inconsistency.
+        // The return type is `Array<string | number>`.
+        return finalResult;
+    }
+    /**
+     * Prevent direct setting of thisToxic
+     */
+    set thisToxic(key) {
+        throw new Error("Cannot set thisToxic property directly");
+    }
+    /**
+     * Get toxicity score
+     * @return - Toxicity score (0-100)
+     */
+    get toxicityScore() {
+        return this._toxicScore;
+    }
+    /**
+     * Get list of toxic words found
+     * @return - Array of toxic words
+     */
+    get toxicWords() {
+        return [...this._toxicWords];
+    }
+    /**
+     * Clean toxic words from text
+     * @param positions - Positions of toxic words
+     * @return - Cleaned text
+     */
+    clean(positions = null) {
+        if (!positions)
+            positions = this.position();
+        if (!positions.length)
+            return this._text;
+        if ((positions || this.__subtxic) && this._emoji.test(this._text) && this._options.filterSeverity >= 2) {
+            // Replace emojis in the text with asterisks (keeping one character visible)
+            this._text = this._text.replace(this._emoji, '*'.repeat(1));
+        }
+        ;
+        const words = this._text.split(' ');
+        const replaceChar = this._options.replaceChar;
+        // Process each toxic word position
+        positions.forEach(position => {
+            const toxicWord = FilterBadWord.getboundPosition(this._text, position);
+            words.forEach((word, index) => {
+                // Skip URLs and emails if not configured to filter them
+                if ((validateInput("email", word) && !this._options.filterEmails) ||
+                    (validateInput("url", word) && !this._options.filterUrls)) {
+                    return;
+                }
+                // Replace the toxic word with censored version
+                if (word.toLowerCase().includes(toxicWord.toLowerCase())) {
+                    if (this._options.preserveFirstLast) {
+                        // Preserve first and last character
+                        if (toxicWord.length > 2) {
+                            const censored = toxicWord[0] + replaceChar.repeat(toxicWord.length - 2) + toxicWord[toxicWord.length - 1];
+                            words[index] = word.replace(new RegExp(toxicWord, 'i'), censored);
+                        }
+                        else {
+                            words[index] = word.replace(new RegExp(toxicWord, 'i'), replaceChar.repeat(toxicWord.length));
+                        }
+                    }
+                    else {
+                        // Regular censoring
+                        words[index] = word.replace(new RegExp(toxicWord, 'i'), replaceChar.repeat(toxicWord.length));
+                    }
+                }
+            });
+        });
+        // Also clean contextual toxic words
+        if (this._st) {
+            this.__subtxic.forEach(([oldWord, newWord]) => {
+                words.forEach((word, index) => {
+                    // Skip URLs and emails if not configured to filter them
+                    if ((validateInput("email", word) && !this._options.filterEmails) ||
+                        (validateInput("url", word) && !this._options.filterUrls)) {
+                        return;
+                    }
+                    if (word.toLowerCase().includes(oldWord.toLowerCase())) {
+                        words[index] = word.replace(new RegExp(oldWord, 'i'), newWord);
+                    }
+                });
+            });
+        }
+        return words.join(' ');
+    }
+    /**
+     * Get information about the toxicity check
+     * @return - Toxicity information
+     */
+    getToxicityInfo() {
+        // Calling thisToxic getter populates _toxicWords, _toxicPositions, __subtxic, and _toxicScore
+        const isToxicResult = this.thisToxic; // This populates internal state
+        // Determine isToxic and toxicityLevel from the result array
+        const isToxic = isToxicResult[0] === "Toxic";
+        const toxicityLevel = isToxic ? isToxicResult[1] : 0; // Cast to number
+        // The score is the last element if toxic, otherwise 0.
+        // The `thisToxic` getter pushes the score at the end.
+        // If it's ["Toxic", 1, score], score is at index 2.
+        // If it's ["Notoxic", 0], score is implicitly 0.
+        // The getter also populates `this._toxicScore`. Let's use that.
+        const toxicityScore = this._toxicScore;
+        return {
+            isToxic: isToxic,
+            toxicityLevel: toxicityLevel,
+            toxicityScore: toxicityScore,
+            toxicWords: [...this._toxicWords],
+            cleanedText: this.clean(),
+            originalText: this._origintext,
+            // NOTE: The original code calls convertCommentFixed again here.
+            // This might be inconsistent if the constructor or thisToxic already did it.
+            // Preserving original behavior.
+            normalizedText: convertCommentFixed(this._text, this._options.ignoreLastDigits)
+        };
+    }
+}
+class filters_badword extends FilterBadWord {
+    constructor() {
+        super(); // Memanggil konstruktor kelas induk
+        this._cl = true; // Inisialisasi properti cl
+        this._st = true; // Inisialisasi properti st
+    }
+    text_o(text) {
+        this._text = text.toString();
+    }
+    config(cl = true, smart = true, customFilter = "", customSubFilter = "") {
+        this._cl = cl;
+        this._st = smart;
+        if (customFilter.length > 3) {
+            this._filt = new RegExp(this._filt.source + "|" + escapeRegExp(customFilter), "gi");
+        }
+        if (customSubFilter.length > 3) {
+            this._subfilter = new RegExp(this._subfilter.source + "|" + escapeRegExp(customSubFilter), "gi");
+        }
+    }
+    get cleans() {
+        if (this._cl) {
+            if (this.thisToxic) {
+                // Check if thisToxic is an array-like structure with at least 3 elements
+                // and the second element (index 1) is exactly 1
+                if (Array.isArray(this.thisToxic) && this.thisToxic.length > 2 && this.thisToxic[1] === 1 && this._st) {
+                    return this.clean(this.position());
+                }
+                ;
+                // Original code didn't check if thisToxic is an array, just length and index access.
+                // Added Array.isArray check for robustness, but keeping original logic otherwise.
+                // If thisToxic is not an array but has length/index properties, the original code might behave differently.
+                // Sticking strictly to original logic: check length > 2 and index 1 === 1
+                if (this.thisToxic.length > 2 && this.thisToxic[1] === 1) {
+                    return this.clean(this.position());
+                }
+                ;
+            }
+            ;
+            return this.clean(this.position());
+        }
+        ;
+        return this._text.trim();
+    }
+    set cleans(value) {
+        throw value;
+    }
+}
+
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+    module.exports = {
+      FilterBadWord,
+      filters_badword
+    };
+
+} else if (typeof exports !== 'undefined' && typeof exports?.default !== 'undefined') {
+    // Export for ES modules
+    exports.default = {
+      FilterBadWord,
+      filters_badword
+    };
+}else{
+    // Definisikan objek ekspor
+    const exportsObject = {
+        /**
+         * @param text - Text to filter
+         * @param customFilter - Custom bad words pipe-separated
+         * @param customSubFilter - Custom contextual bad words pipe-separated
+         * @param options - Additional options
+         */
+        FilterBadWord,
+        /**
+         * filters_badword class: a simpler class to filter bad words 
+         * which uses the FilterBadWord class. To use it you have to call the config function
+         */
+        filters_badword
+    };
+    
+    if ((typeof exports === 'object' && typeof module !== 'undefined') !== true){
+        if (typeof window.customElements !== "undefined") {
+            // Support for ES Modules, use `export`
+            window.exportsObject = exportsObject; // Store in window object
+            Object.assign(window, exportsObject);
+        } else {
+            // If ES Modules is not supported, use Object.assign
+            Object.assign(window, exportsObject);
+        };
+    };
+}
